@@ -65,15 +65,40 @@ def project_create():
 @projects.route('/projects', methods=['GET'])
 def project_list():
     from application.project_app import project_app
+    from model import PROJECT
     try:
         page = int(request.args.get('page', '1'))
         pageSize = int(request.args.get('pageSize', '20'))
+        if request.args.get('id'):
+            id_list = request.args['id'].replace('[', '').replace(']', '').replace(' ', '').\
+                replace("'", '').replace('"', '').split(',')
+            ObjectId_list = []
+            for i in id_list:
+                ObjectId_list.append(ObjectId(i))
+            model_list = list(PROJECT.objects.raw({'_id': {'$in': ObjectId_list}}))
+            project_dict = {}
+            for project_model in model_list:
+                if project_model.base == None:
+                    base = None
+                else:
+                    base = str(project_model.base._id)
+                project_dict[str(project_model._id)] = {
+                    'id': str(project_model._id),
+                    'creator': str(project_model.creator),
+                    'description': project_model.description,
+                    'requirement': project_model.requirement,
+                    'material': project_model.material,
+                    'reference': project_model.reference,
+                    'base': base,
+                    'spec': project_model.spec,
+                    'createdAt': project_model.createdAt,
+                    'updatedAt': project_model.updatedAt
+                }
+            return jsonify(project_dict)
         if request.args.get('all'):
             page = pageSize = None
         else:
             count = project_app().project_count()
-            if type(count) == dict:
-                return jsonify({'error': count})
             if count % pageSize == 0:
                 totalPage = count // pageSize
             else:
@@ -128,6 +153,7 @@ def project_list():
         return jsonify(returnObj)
     except Exception as e:
         print(e)
+        return raise_status(500, '后台异常')
 
 
 @projects.route('/projects/<projectId>', methods=['GET'])
@@ -246,12 +272,9 @@ def project_change(projectId):
     requestObj = {'_id': projectId}
     updateObj = request.json
     try:
-        if updateObj.get('creator'):
-            updateObj['creator'] = ObjectId(updateObj['creator'])
-            project_app().project_reference_check(collection='PROJECT', reference=updateObj['creator'])
         if updateObj.get('base') and updateObj.get('base') != projectId:
             updateObj['base'] = ObjectId(updateObj['base'])
-            project_app().project_reference_check(collection='USER', reference=updateObj['base'])
+            project_app().project_reference_check(reference=updateObj['base'])
     except PROJECT.DoesNotExist:
         return jsonify({'error': raise_status(400, 'referenceError')})
     project_app(requestObj=requestObj, updateObj=request.json).project_update_set()
