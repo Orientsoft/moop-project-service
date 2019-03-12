@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from auth import raise_status
 import logging
+import traceback
 
 projects = Blueprint('projects', __name__, template_folder='../templates')
 
@@ -25,7 +26,7 @@ def project_create():
     try:
         project_model = project_app(requestObj=requestObj).project_create()
     except Exception as e:
-        logging.error(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
     if project_model.base == None:
         base = None
@@ -175,7 +176,7 @@ def get_project(projectId):
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
     except Exception as e:
-        logging.error(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     project = project_app(requestObj=requestObj).project_find_one()
@@ -230,7 +231,7 @@ def project_replace(projectId):
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
     except Exception as e:
-        logging.error(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     updateObj = request.json
@@ -280,7 +281,7 @@ def project_change(projectId):
     except PROJECT.DoesNotExist:
         return jsonify({'error': raise_status(400, 'projectIdError')})
     except Exception as e:
-        logging.error(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return jsonify({'error': raise_status(400, 'ObjectIdError')})
     requestObj = {'_id': projectId}
     updateObj = request.json
@@ -326,7 +327,7 @@ def project_delete(projectId):
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
     except Exception as e:
-        logging.error(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return jsonify({'error': raise_status(400, '错误的ObjectId')})
     requestObj = {'_id': projectId}
     project_app(requestObj=requestObj).project_delete()

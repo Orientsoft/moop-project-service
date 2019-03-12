@@ -1,9 +1,8 @@
 from model import PROJECT
-from flask import render_template
 from datetime import datetime
-from app import app
 from auth import raise_status
 import logging
+import traceback
 
 
 class project_app():
@@ -35,7 +34,7 @@ class project_app():
             ).save()
             return project_model
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             raise
 
     def project_find_all(self, page=None, pageSize=None):
@@ -45,7 +44,7 @@ class project_app():
             else:
                 project = list(PROJECT.objects.raw(self.requestObj))
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             info = '后台异常'
             return raise_status(500, info)
         return project
@@ -57,7 +56,7 @@ class project_app():
             print("project doesn't exist")
             return None
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             info = '后台异常'
             return raise_status(500, info)
         return project
@@ -67,14 +66,14 @@ class project_app():
             self.updateObj['updatedAt'] = datetime.now()
             PROJECT.objects.raw(self.requestObj).update({'$set': self.updateObj})
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             return raise_status(500, '后台异常')
 
     def project_delete(self):
         try:
             PROJECT.objects.raw(self.requestObj).update({'$set': {'delete': True}})
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             info = '后台异常'
             return raise_status(500, info)
 
@@ -83,7 +82,7 @@ class project_app():
             count = PROJECT.objects.raw(self.requestObj).count()
             return count
         except Exception as e:
-            logging.error(e)
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             return raise_status(500, '后台异常')
 
     def project_check(self):
