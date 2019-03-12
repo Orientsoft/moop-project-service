@@ -3,6 +3,7 @@ from flask import render_template
 from datetime import datetime
 from app import app
 from auth import raise_status
+import logging
 
 
 class project_app():
@@ -25,6 +26,7 @@ class project_app():
                 requirement=self.requestObj['requirement'],
                 material=self.requestObj['material'],
                 reference=self.requestObj['reference'],
+                image=self.requestObj['image'],
                 base=self.requestObj['base'],
                 spec=self.requestObj['spec'],
                 delete=False,
@@ -33,8 +35,7 @@ class project_app():
             ).save()
             return project_model
         except Exception as e:
-            print('project_create error:', e)
-            app.logger.exception(e)
+            logging.error(e)
             raise
 
     def project_find_all(self, page=None, pageSize=None):
@@ -44,10 +45,9 @@ class project_app():
             else:
                 project = list(PROJECT.objects.raw(self.requestObj))
         except Exception as e:
-            print('project_find_all error:', e)
-            app.logger.exception(e)
+            logging.error(e)
             info = '后台异常'
-            return render_template('index.html', error=info)
+            return raise_status(500, info)
         return project
 
     def project_find_one(self):
@@ -57,10 +57,9 @@ class project_app():
             print("project doesn't exist")
             return None
         except Exception as e:
-            print('project_find_one error:', e)
-            app.logger.exception(e)
+            logging.error(e)
             info = '后台异常'
-            return render_template('index.html', error=info)
+            return raise_status(500, info)
         return project
 
     def project_update_set(self):
@@ -68,28 +67,24 @@ class project_app():
             self.updateObj['updatedAt'] = datetime.now()
             PROJECT.objects.raw(self.requestObj).update({'$set': self.updateObj})
         except Exception as e:
-            print('project_update_set errpr:', e)
-            app.logger.exception(e)
-            return render_template('index.html', error=e)
+            logging.error(e)
+            return raise_status(500, '后台异常')
 
     def project_delete(self):
         try:
             PROJECT.objects.raw(self.requestObj).update({'$set': {'delete': True}})
         except Exception as e:
-            print('project_delete error:', e)
-            app.logger.exception(e)
+            logging.error(e)
             info = '后台异常'
-            return render_template('index.html', error=info)
+            return raise_status(500, info)
 
     def project_count(self):
         try:
             count = PROJECT.objects.raw(self.requestObj).count()
             return count
         except Exception as e:
-            print('project_count error:', e)
-            app.logger.exception(e)
-            error = raise_status(500, '后台异常')
-            return error
+            logging.error(e)
+            return raise_status(500, '后台异常')
 
     def project_check(self):
         try:

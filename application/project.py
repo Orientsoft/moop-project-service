@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify, session, request, render_template, redirect
+from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from auth import raise_status
+import logging
 
 projects = Blueprint('projects', __name__, template_folder='../templates')
 
@@ -24,7 +25,8 @@ def project_create():
     try:
         project_model = project_app(requestObj=requestObj).project_create()
     except Exception as e:
-        return raise_status(500, str(e))
+        logging.error(e)
+        return raise_status(500, '后台异常')
     if project_model.base == None:
         base = None
     else:
@@ -40,6 +42,7 @@ def project_create():
                 'requirement': project_model.base.requirement,
                 'material': project_model.base.material,
                 'reference': project_model.base.reference,
+                'image': project_model.base.image,
                 'base': base_reference,
                 'spec': project_model.base.spec,
                 'createdAt': project_model.base.createdAt,
@@ -54,6 +57,7 @@ def project_create():
         'requirement': project_model.requirement,
         'material': project_model.material,
         'reference': project_model.reference,
+        'image': project_model.image,
         'base': base,
         'spec': project_model.spec,
         'createdAt': project_model.createdAt,
@@ -89,6 +93,7 @@ def project_list():
                     'requirement': project_model.requirement,
                     'material': project_model.material,
                     'reference': project_model.reference,
+                    'image': project_model.image,
                     'base': base,
                     'spec': project_model.spec,
                     'createdAt': project_model.createdAt,
@@ -123,6 +128,7 @@ def project_list():
                         'requirement': project_model.base.requirement,
                         'material': project_model.base.material,
                         'reference': project_model.base.reference,
+                        'image': project_model.base.image,
                         'base': base_reference,
                         'spec': project_model.base.spec,
                         'createdAt': project_model.base.createdAt,
@@ -137,6 +143,7 @@ def project_list():
                 'requirement': project_model.requirement,
                 'material': project_model.material,
                 'reference': project_model.reference,
+                'image': project_model.image,
                 'base': base,
                 'spec': project_model.spec,
                 'createdAt': project_model.createdAt,
@@ -167,7 +174,8 @@ def get_project(projectId):
         project_app().projectId_check(projectId=projectId)
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
-    except Exception:
+    except Exception as e:
+        logging.error(e)
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     project = project_app(requestObj=requestObj).project_find_one()
@@ -186,6 +194,7 @@ def get_project(projectId):
                 'requirement': project.base.requirement,
                 'material': project.base.material,
                 'reference': project.base.reference,
+                'image': project.base.image,
                 'base': base_reference,
                 'spec': project.base.spec,
                 'createdAt': project.base.createdAt,
@@ -200,6 +209,7 @@ def get_project(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'image': project.image,
         'base': base,
         'spec': project.spec,
         'createdAt': project.createdAt,
@@ -219,7 +229,8 @@ def project_replace(projectId):
         project_app().projectId_check(projectId=projectId)
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
-    except Exception:
+    except Exception as e:
+        logging.error(e)
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     updateObj = request.json
@@ -248,6 +259,7 @@ def project_replace(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'image': project.image,
         'base': baseId,
         'spec': project.spec,
         'createdAt': project.createdAt,
@@ -267,7 +279,8 @@ def project_change(projectId):
         project_app().projectId_check(projectId=projectId)
     except PROJECT.DoesNotExist:
         return jsonify({'error': raise_status(400, 'projectIdError')})
-    except Exception:
+    except Exception as e:
+        logging.error(e)
         return jsonify({'error': raise_status(400, 'ObjectIdError')})
     requestObj = {'_id': projectId}
     updateObj = request.json
@@ -291,6 +304,7 @@ def project_change(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'image': project.image,
         'base': baseId,
         'spec': project.spec,
         'createdAt': project.createdAt,
@@ -311,7 +325,8 @@ def project_delete(projectId):
         project_app().projectId_check(projectId=projectId)
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
-    except Exception:
+    except Exception as e:
+        logging.error(e)
         return jsonify({'error': raise_status(400, '错误的ObjectId')})
     requestObj = {'_id': projectId}
     project_app(requestObj=requestObj).project_delete()
