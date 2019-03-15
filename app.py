@@ -17,9 +17,7 @@ def import_config():
         'DEBUG': config['DEBUG'],
         'SECRET_KEY': config['SECRET_KEY'],
         'MONGODB_URL': config['MONGODB_URL'],
-        'LOG_FORMAT': config['LOG_FORMAT'],
-        'MOOP_TENANT_SERVICE_URL': config['MOOP_TENANT_SERVICE_URL'],
-        'MOOP_PROJECT_SERVICE_URL': config['MOOP_PROJECT_SERVICE_URL']
+        'LOG_FORMAT': config['LOG_FORMAT']
     }
     return cfg
 
