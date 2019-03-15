@@ -1,10 +1,10 @@
 from flask import Blueprint, jsonify, request
 from bson import ObjectId
-from auth import raise_status
+from auth import raise_status, filter
 import logging
 import traceback
 
-projects = Blueprint('projects', __name__, template_folder='../templates')
+projects = Blueprint('projects', __name__)
 
 
 @projects.route('/projects', methods=['POST'])
@@ -13,6 +13,9 @@ def project_create():
     from model import PROJECT
     requestObj = request.json
     requestObj['creator'] = ObjectId(requestObj['creator'])
+    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+                  'material', 'reference', 'image', 'base', 'spec']
+    requestObj = filter(query_list=query_list, updateObj=requestObj)
     if project_app(requestObj={'title': requestObj['title']}).project_check():
         return raise_status(400, 'project标题重复')
     if not requestObj.get('base'):
@@ -42,6 +45,7 @@ def project_create():
                 'description': project_model.base.description,
                 'requirement': project_model.base.requirement,
                 'material': project_model.base.material,
+                'timeConsume': project_model.base.timeConsume,
                 'reference': project_model.base.reference,
                 'image': project_model.base.image,
                 'base': base_reference,
@@ -57,6 +61,7 @@ def project_create():
         'description': project_model.description,
         'requirement': project_model.requirement,
         'material': project_model.material,
+        'timeConsume': project_model.timeConsume,
         'reference': project_model.reference,
         'image': project_model.image,
         'base': base,
@@ -94,6 +99,7 @@ def project_list():
                     'requirement': project_model.requirement,
                     'material': project_model.material,
                     'reference': project_model.reference,
+                    'timeConsume': project_model.timeConsume,
                     'image': project_model.image,
                     'base': base,
                     'spec': project_model.spec,
@@ -128,6 +134,7 @@ def project_list():
                         'description': project_model.base.description,
                         'requirement': project_model.base.requirement,
                         'material': project_model.base.material,
+                        'timeConsume': project_model.base.timeConsume,
                         'reference': project_model.base.reference,
                         'image': project_model.base.image,
                         'base': base_reference,
@@ -144,6 +151,7 @@ def project_list():
                 'requirement': project_model.requirement,
                 'material': project_model.material,
                 'reference': project_model.reference,
+                'timeConsume': project_model.timeConsume,
                 'image': project_model.image,
                 'base': base,
                 'spec': project_model.spec,
@@ -193,6 +201,7 @@ def get_project(projectId):
                 'creator': str(project.base.creator),
                 'description': project.base.description,
                 'requirement': project.base.requirement,
+                'timeConsume': project.base.timeConsume,
                 'material': project.base.material,
                 'reference': project.base.reference,
                 'image': project.base.image,
@@ -210,6 +219,7 @@ def get_project(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'timeConsume': project.timeConsume,
         'image': project.image,
         'base': base,
         'spec': project.spec,
@@ -235,6 +245,9 @@ def project_replace(projectId):
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     updateObj = request.json
+    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+                  'material', 'reference', 'image', 'base', 'spec']
+    updateObj = filter(query_list=query_list, updateObj=updateObj)
     if updateObj.get('id'):
         del updateObj['id']
     try:
@@ -259,6 +272,7 @@ def project_replace(projectId):
         'description': project.description,
         'requirement': project.requirement,
         'material': project.material,
+        'timeConsume': project.timeConsume,
         'reference': project.reference,
         'image': project.image,
         'base': baseId,
@@ -285,6 +299,11 @@ def project_change(projectId):
         return jsonify({'error': raise_status(400, 'ObjectIdError')})
     requestObj = {'_id': projectId}
     updateObj = request.json
+    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+                  'material', 'reference', 'image', 'base', 'spec']
+    updateObj = filter(query_list=query_list, updateObj=updateObj)
+    if updateObj.get('id'):
+        del updateObj['id']
     try:
         if updateObj.get('base') and updateObj.get('base') != projectId:
             updateObj['base'] = ObjectId(updateObj['base'])
@@ -305,6 +324,7 @@ def project_change(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'timeConsume': project.timeConsume,
         'image': project.image,
         'base': baseId,
         'spec': project.spec,

@@ -15,6 +15,7 @@ class PROJECT(MongoModel):
     material = CharField()
     reference = CharField()
     image = CharField()
+    timeConsume = CharField()
     base = ReferenceField('PROJECT', blank=True)
     # base = ReferenceField('PROJECT')
     spec = CharField()
