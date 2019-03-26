@@ -3,6 +3,7 @@ from bson import ObjectId
 from auth import raise_status, filter
 import logging
 import traceback
+import requests
 
 projects = Blueprint('projects', __name__)
 
@@ -13,9 +14,21 @@ def project_create():
     from model import PROJECT
     requestObj = request.json
     requestObj['creator'] = ObjectId(requestObj['creator'])
+    # https://github.com/NickeryXu/moop-tenant-service.git
+    git_list = requestObj['githuburl'].split('/')
+    git_account = git_list[3] + '/'
+    repo = git_list[4][: -4] + '/'
+    url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
+    try:
+        r = requests.get(url=url)
+        labs = r.json()['labs']
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return raise_status(400, '获取元数据失败')
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
                   'material', 'reference', 'image', 'base', 'spec']
     requestObj = filter(query_list=query_list, updateObj=requestObj)
+    requestObj['labs'] = labs
     if project_app(requestObj={'title': requestObj['title']}).project_check():
         return raise_status(400, 'project标题重复')
     if not requestObj.get('base'):
@@ -48,6 +61,7 @@ def project_create():
                 'material': project_model.base.material,
                 'timeConsume': project_model.base.timeConsume,
                 'reference': project_model.base.reference,
+                'labs': project_model.base.labs,
                 'image': project_model.base.image,
                 'base': base_reference,
                 'spec': project_model.base.spec,
@@ -64,6 +78,7 @@ def project_create():
         'requirement': project_model.requirement,
         'material': project_model.material,
         'timeConsume': project_model.timeConsume,
+        'labs': project_model.labs,
         'reference': project_model.reference,
         'image': project_model.image,
         'base': base,
@@ -100,6 +115,7 @@ def project_list():
                     'description': project_model.description,
                     'title': project_model.title,
                     'requirement': project_model.requirement,
+                    'labs': project_model.labs,
                     'material': project_model.material,
                     'reference': project_model.reference,
                     'timeConsume': project_model.timeConsume,
@@ -139,6 +155,7 @@ def project_list():
                         'title': project_model.base.title,
                         'material': project_model.base.material,
                         'timeConsume': project_model.base.timeConsume,
+                        'labs': project_model.base.labs,
                         'reference': project_model.base.reference,
                         'image': project_model.base.image,
                         'base': base_reference,
@@ -155,6 +172,7 @@ def project_list():
                 'requirement': project_model.requirement,
                 'title': project_model.title,
                 'material': project_model.material,
+                'labs': project_model.labs,
                 'reference': project_model.reference,
                 'timeConsume': project_model.timeConsume,
                 'image': project_model.image,
@@ -208,6 +226,7 @@ def get_project(projectId):
                 'requirement': project.base.requirement,
                 'title': project.base.title,
                 'timeConsume': project.base.timeConsume,
+                'labs': project.base.labs,
                 'material': project.base.material,
                 'reference': project.base.reference,
                 'image': project.base.image,
@@ -225,6 +244,7 @@ def get_project(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'title': project.title,
+        'labs': project.labs,
         'reference': project.reference,
         'timeConsume': project.timeConsume,
         'image': project.image,
@@ -279,6 +299,7 @@ def project_replace(projectId):
         'description': project.description,
         'requirement': project.requirement,
         'material': project.material,
+        'labs': project.labs,
         'timeConsume': project.timeConsume,
         'reference': project.reference,
         'image': project.image,
@@ -331,6 +352,7 @@ def project_change(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'labs': project.labs,
         'timeConsume': project.timeConsume,
         'image': project.image,
         'base': baseId,
