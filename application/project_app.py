@@ -9,7 +9,7 @@ class project_app():
 
     def __init__(self, requestObj=None, updateObj=None):
         self.requestObj = requestObj
-        if self.requestObj == None:
+        if self.requestObj is None:
             self.requestObj = {'delete': False}
         else:
             self.requestObj['delete'] = False

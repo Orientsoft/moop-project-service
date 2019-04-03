@@ -17,7 +17,10 @@ def project_create():
     # https://github.com/NickeryXu/moop-tenant-service.git
     git_list = requestObj['githuburl'].split('/')
     git_account = git_list[3] + '/'
-    repo = git_list[4][: -4] + '/'
+    if '.git' in git_list[4]:
+        repo = git_list[4][: -4] + '/'
+    else:
+        repo = git_list[4] + '/'
     url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
     try:
         r = requests.get(url=url)
@@ -28,7 +31,6 @@ def project_create():
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
                   'material', 'reference', 'image', 'base', 'spec']
     requestObj = filter(query_list=query_list, updateObj=requestObj)
-    requestObj['labs'] = labs
     if project_app(requestObj={'title': requestObj['title']}).project_check():
         return raise_status(400, 'project标题重复')
     if not requestObj.get('base'):
@@ -44,11 +46,24 @@ def project_create():
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
-    if project_model.base == None:
+    lab_list = []
+    for lab in labs:
+        index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
+        lab_list.append({
+            'id': str(project_model._id) + index,
+            'filename': lab.keys()[0],
+            'name': lab.values()[0]
+        })
+    try:
+        project_app(requestObj={'_id': project_model._id}, updateObj={'labs': lab_list}).project_update_set()
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return  raise_status(500, '后台异常')
+    if project_model.base is None:
         base = None
     else:
         if request.args.get('embed'):
-            if project_model.base.base == None:
+            if project_model.base.base is None:
                 base_reference = None
             else:
                 base_reference = str(project_model.base.base._id)
@@ -78,7 +93,7 @@ def project_create():
         'requirement': project_model.requirement,
         'material': project_model.material,
         'timeConsume': project_model.timeConsume,
-        'labs': project_model.labs,
+        'labs': lab_list,
         'reference': project_model.reference,
         'image': project_model.image,
         'base': base,
@@ -97,7 +112,7 @@ def project_list():
         page = int(request.args.get('page', '1'))
         pageSize = int(request.args.get('pageSize', '20'))
         if request.args.get('id'):
-            id_list = request.args['id'].replace('[', '').replace(']', '').replace(' ', '').\
+            id_list = request.args['id'].replace('[', '').replace(']', '').replace(' ', ''). \
                 replace("'", '').replace('"', '').split(',')
             ObjectId_list = []
             for i in id_list:
@@ -105,7 +120,7 @@ def project_list():
             model_list = list(PROJECT.objects.raw({'_id': {'$in': ObjectId_list}}))
             project_dict = {}
             for project_model in model_list:
-                if project_model.base == None:
+                if project_model.base is None:
                     base = None
                 else:
                     base = str(project_model.base._id)
@@ -139,11 +154,11 @@ def project_list():
         projects_list = project_app().project_find_all(page, pageSize)
         project_ln_list = []
         for project_model in projects_list:
-            if project_model.base == None:
+            if project_model.base is None:
                 base = None
             else:
                 if request.args.get('embed'):
-                    if project_model.base.base == None:
+                    if project_model.base.base is None:
                         base_reference = None
                     else:
                         base_reference = str(project_model.base.base._id)
@@ -215,7 +230,7 @@ def get_project(projectId):
         base = None
     else:
         if request.args.get('embed'):
-            if project.base.base == None:
+            if project.base.base is None:
                 base_reference = None
             else:
                 base_reference = str(project.base.base._id)
@@ -278,7 +293,7 @@ def project_replace(projectId):
     if updateObj.get('id'):
         del updateObj['id']
     try:
-        if updateObj.get('base') and updateObj.get('base') != None:
+        if updateObj.get('base') and updateObj.get('base') is not None:
             updateObj['base'] = ObjectId(updateObj['base'])
             project_app().project_reference_check(reference=updateObj['base'])
     except PROJECT.DoesNotExist:
@@ -288,7 +303,7 @@ def project_replace(projectId):
     if project._id == project.base:
         baseId = None
     else:
-        if project.base == None:
+        if project.base is None:
             baseId = project.base
         else:
             baseId = str(project.base._id)
@@ -381,3 +396,17 @@ def project_delete(projectId):
     requestObj = {'_id': projectId}
     project_app(requestObj=requestObj).project_delete()
     return raise_status(200)
+
+
+@projects.route('/projects/tag', methods=['GET'])
+def project_tag():
+    from model import TAG
+    try:
+        tag_model_list = list(TAG.objects.raw({'delete': False}))
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return raise_status(500, '后台异常')
+    tag_list = []
+    for model in tag_model_list:
+        tag_list.append({'id': str(model._id), 'name': model.name})
+    return jsonify(tag_list)
