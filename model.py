@@ -1,10 +1,19 @@
-from pymodm import CharField, ReferenceField, ListField,\
+from pymodm import CharField, ReferenceField, ListField, \
     IntegerField, BooleanField, DateTimeField, ObjectIdField, FloatField
 from pymodm.connection import connect
 from pymodm import MongoModel
 from app import app
 
 connect(app.config['MONGODB_URL'])
+
+
+class TAG(MongoModel):
+    name = CharField()
+    delete = BooleanField()
+
+    class Meta:
+        collection_name = 'tag'
+        final = True
 
 
 class PROJECT(MongoModel):
