@@ -148,14 +148,14 @@ def project_list():
         if request.args.get('all'):
             page = pageSize = None
         else:
-            count = project_app(requestObj=query).project_count()
+            count = project_app(requestObj={'tag': query}).project_count()
             if count % pageSize == 0:
                 totalPage = count // pageSize
             else:
                 totalPage = (count // pageSize) + 1
             if page > totalPage:
                 return raise_status(400, '页数超出范围')
-        projects_list = project_app(requestObj=query).project_find_all(page, pageSize)
+        projects_list = project_app(requestObj={'tag': query}).project_find_all(page, pageSize)
         project_ln_list = []
         for project_model in projects_list:
             if project_model.base is None:
@@ -212,7 +212,7 @@ def project_list():
             }
         return jsonify(returnObj)
     except Exception as e:
-        print(e)
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
 
 
