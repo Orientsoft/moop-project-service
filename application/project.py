@@ -150,7 +150,7 @@ def project_list():
         else:
             count = project_app(requestObj={'tag': query}).project_count()
             if count % pageSize == 0:
-                totalPage = count // pageSize
+                totalPage = count // pageSize if count != 0 else 1
             else:
                 totalPage = (count // pageSize) + 1
             if page > totalPage:
