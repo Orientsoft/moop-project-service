@@ -29,7 +29,7 @@ def project_create():
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(400, '获取元数据失败')
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec']
+                  'material', 'reference', 'image', 'base', 'spec', 'tag']
     requestObj = filter(query_list=query_list, updateObj=requestObj)
     if project_app(requestObj={'title': requestObj['title']}).project_check():
         return raise_status(400, 'project标题重复')
@@ -75,6 +75,7 @@ def project_create():
                 'requirement': project_model.base.requirement,
                 'material': project_model.base.material,
                 'timeConsume': project_model.base.timeConsume,
+                'tag': project_model.base.tag.name,
                 'reference': project_model.base.reference,
                 'labs': project_model.base.labs,
                 'image': project_model.base.image,
@@ -93,6 +94,7 @@ def project_create():
         'requirement': project_model.requirement,
         'material': project_model.material,
         'timeConsume': project_model.timeConsume,
+        'tag': project_model.tag.name,
         'labs': lab_list,
         'reference': project_model.reference,
         'image': project_model.image,
@@ -131,6 +133,7 @@ def project_list():
                     'title': project_model.title,
                     'requirement': project_model.requirement,
                     'labs': project_model.labs,
+                    'tag': project_model.tag.name,
                     'material': project_model.material,
                     'reference': project_model.reference,
                     'timeConsume': project_model.timeConsume,
@@ -141,17 +144,18 @@ def project_list():
                     'updatedAt': project_model.updatedAt
                 }
             return jsonify(project_dict)
+        query = ObjectId(request.args['tag']) if request.args.get('tag') else None
         if request.args.get('all'):
             page = pageSize = None
         else:
-            count = project_app().project_count()
+            count = project_app(requestObj=query).project_count()
             if count % pageSize == 0:
                 totalPage = count // pageSize
             else:
                 totalPage = (count // pageSize) + 1
             if page > totalPage:
                 return raise_status(400, '页数超出范围')
-        projects_list = project_app().project_find_all(page, pageSize)
+        projects_list = project_app(requestObj=query).project_find_all(page, pageSize)
         project_ln_list = []
         for project_model in projects_list:
             if project_model.base is None:
@@ -169,6 +173,7 @@ def project_list():
                         'requirement': project_model.base.requirement,
                         'title': project_model.base.title,
                         'material': project_model.base.material,
+                        'tag': project_model.base.tag.name,
                         'timeConsume': project_model.base.timeConsume,
                         'labs': project_model.base.labs,
                         'reference': project_model.base.reference,
@@ -189,6 +194,7 @@ def project_list():
                 'material': project_model.material,
                 'labs': project_model.labs,
                 'reference': project_model.reference,
+                'tag': project_model.tag.name,
                 'timeConsume': project_model.timeConsume,
                 'image': project_model.image,
                 'base': base,
@@ -240,6 +246,7 @@ def get_project(projectId):
                 'description': project.base.description,
                 'requirement': project.base.requirement,
                 'title': project.base.title,
+                'tag': project.base.tag.name,
                 'timeConsume': project.base.timeConsume,
                 'labs': project.base.labs,
                 'material': project.base.material,
@@ -259,6 +266,7 @@ def get_project(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'title': project.title,
+        'tag': project.tag.name,
         'labs': project.labs,
         'reference': project.reference,
         'timeConsume': project.timeConsume,
@@ -288,7 +296,7 @@ def project_replace(projectId):
     requestObj = {'_id': projectId}
     updateObj = request.json
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec']
+                  'material', 'reference', 'image', 'base', 'spec', 'tag']
     updateObj = filter(query_list=query_list, updateObj=updateObj)
     if updateObj.get('id'):
         del updateObj['id']
@@ -315,6 +323,7 @@ def project_replace(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'labs': project.labs,
+        'tag': project.tag.name,
         'timeConsume': project.timeConsume,
         'reference': project.reference,
         'image': project.image,
@@ -343,7 +352,7 @@ def project_change(projectId):
     requestObj = {'_id': projectId}
     updateObj = request.json
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec']
+                  'material', 'reference', 'image', 'base', 'spec', 'tag']
     updateObj = filter(query_list=query_list, updateObj=updateObj)
     if updateObj.get('id'):
         del updateObj['id']
@@ -367,6 +376,7 @@ def project_change(projectId):
         'requirement': project.requirement,
         'material': project.material,
         'reference': project.reference,
+        'tag': project.tag.name,
         'labs': project.labs,
         'timeConsume': project.timeConsume,
         'image': project.image,
@@ -400,13 +410,28 @@ def project_delete(projectId):
 
 @projects.route('/projects/tag', methods=['GET'])
 def project_tag():
-    from model import TAG
+    from model import CATEGORY, TYPE, PROJECT
     try:
-        tag_model_list = list(TAG.objects.raw({'delete': False}))
+        category_model_list = list(CATEGORY.objects.raw({'delete': False}))
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
     tag_list = []
-    for model in tag_model_list:
-        tag_list.append({'id': str(model._id), 'name': model.name})
+    for model in category_model_list:
+        category = {'id': str(model._id), 'category': model.name}
+        try:
+            type_list = list(TYPE.objects.raw({'category': model._id, 'delete': False}))
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+            return raise_status(500, '后台异常')
+        tag = []
+        for type_model in type_list:
+            count = PROJECT.objects.raw({'tag': type_model._id}).count()
+            tag.append({
+                'id': str(type_model._id),
+                'name': type_model.name,
+                'count': count
+            })
+        category['type'] = tag
+        tag_list.append(category)
     return jsonify(tag_list)

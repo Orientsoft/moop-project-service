@@ -7,12 +7,22 @@ from app import app
 connect(app.config['MONGODB_URL'])
 
 
-class TAG(MongoModel):
+class CATEGORY(MongoModel):
     name = CharField()
     delete = BooleanField()
 
     class Meta:
-        collection_name = 'tag'
+        collection_name = 'category'
+        final = True
+
+
+class TYPE(MongoModel):
+    name = CharField()
+    category = ReferenceField(CATEGORY)
+    delete = BooleanField()
+
+    class Meta:
+        collection_name = 'type'
         final = True
 
 
@@ -23,6 +33,7 @@ class PROJECT(MongoModel):
     requirement = CharField()
     material = CharField()
     reference = CharField()
+    tag = ReferenceField(TYPE)
     image = CharField()
     labs = ListField()
     timeConsume = CharField()
