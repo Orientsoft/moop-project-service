@@ -7,7 +7,7 @@ def import_config():
     parser = OptionParser()
     parser.add_option('-f', '--file', action='store', type='string', dest='filename')
     option, args = parser.parse_args()
-    f = open(option.filename)
+    f = open(option.filename, encoding='utf-8')
     data = yaml.load(f)
     f.close()
     config = data['config']
