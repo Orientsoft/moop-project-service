@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: project-service-config
+
+data:
+    config.yaml: |-
+      config:
+        HOST:
+          '0.0.0.0'
+        PORT:
+          7779
+        DEBUG:
+          true
+        SECRET_KEY:
+          'abcdefg'
+        MONGODB_URL:
+          'mongodb://mongodb.database.svc:27017/MOOP_SERVICE'
+        LOG_FORMAT:
+          '%(asctime)s - %(filename)s:%(lineno)s - %(name)s:%(funcName)s - [%(levelname)s] %(message)s'
