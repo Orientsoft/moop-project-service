@@ -58,7 +58,7 @@ def project_create():
         project_app(requestObj={'_id': project_model._id}, updateObj={'labs': lab_list}).project_update_set()
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return  raise_status(500, '后台异常')
+        return raise_status(500, '后台异常')
     if project_model.base is None:
         base = None
     else:
@@ -144,11 +144,11 @@ def project_list():
                     'updatedAt': project_model.updatedAt
                 }
             return jsonify(project_dict)
-        query = [ObjectId(x) for x in request.args['tag']] if request.args.get('tag') else None
+        query = [ObjectId(x) for x in request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ', '').split(',')] if request.args.get('tag') else None
         if request.args.get('all'):
             page = pageSize = None
         else:
-            count = project_app(requestObj={'tag': query}).project_count()
+            count = project_app(requestObj={'tag': {'$in': query}}).project_count()
             if count % pageSize == 0:
                 totalPage = count // pageSize if count != 0 else 1
             else:

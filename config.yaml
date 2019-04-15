@@ -1,0 +1,13 @@
+config:
+  # 应用监听的ip
+  HOST: '0.0.0.0'
+  # 应用的端口
+  PORT: 7779
+  # 应用的debug模式
+  DEBUG: true
+  # 加密key，无固定生成方式，可随意填写
+  SECRET_KEY: 'abcdefg'
+  # 程序的mongo地址
+  MONGODB_URL: 'mongodb://192.168.0.48:38213/MOOP_SERVICE'
+  # 输出日志格式
+  LOG_FORMAT: '%(asctime)s - %(filename)s:%(lineno)s - %(name)s:%(funcName)s - [%(levelname)s] %(message)s'
