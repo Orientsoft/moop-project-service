@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: project-service-deployment
+  name: project-service
   # namespace: demo
 spec:
   replicas: 1
