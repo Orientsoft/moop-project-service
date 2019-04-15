@@ -144,7 +144,7 @@ def project_list():
                     'updatedAt': project_model.updatedAt
                 }
             return jsonify(project_dict)
-        query = ObjectId(request.args['tag']) if request.args.get('tag') else None
+        query = [ObjectId(x) for x in request.args['tag']] if request.args.get('tag') else None
         if request.args.get('all'):
             page = pageSize = None
         else:
@@ -155,7 +155,7 @@ def project_list():
                 totalPage = (count // pageSize) + 1
             if page > totalPage:
                 return raise_status(400, '页数超出范围')
-        projects_list = project_app(requestObj={'tag': query}).project_find_all(page, pageSize)
+        projects_list = project_app(requestObj={'tag': {'$in': query}}).project_find_all(page, pageSize)
         project_ln_list = []
         for project_model in projects_list:
             if project_model.base is None:
