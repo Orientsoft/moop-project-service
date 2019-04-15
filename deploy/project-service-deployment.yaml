@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-service-deployment
+  # namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moop
+      service: project-service-deployment
+  template:
+    metadata:
+      labels:
+        app: moop
+        service: project-service-deployment
+    spec:
+      containers:
+      - name: moop-project-service
+        image: registry.datadynamic.io/moop/moop-project-service:20190412
+        volumeMounts:
+        - name:  project-service-config
+          mountPath: /app/config.yaml
+      volumes:
+      - name:  project-service-config
+        configMap:
+          name: project-service-config
