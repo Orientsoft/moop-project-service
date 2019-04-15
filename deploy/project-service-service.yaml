@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-service-service
+spec:
+  ports:
+  - name: project-service-http
+    nodePort: 31779
+    port: 7779
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: moop
+    service: project-service
+  type: NodePort

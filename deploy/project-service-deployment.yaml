@@ -9,12 +9,12 @@ spec:
   selector:
     matchLabels:
       app: moop
-      service: project-service-deployment
+      service: project-service
   template:
     metadata:
       labels:
         app: moop
-        service: project-service-deployment
+        service: project-service
     spec:
       containers:
       - name: moop-project-service
