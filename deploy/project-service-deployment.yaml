@@ -22,6 +22,11 @@ spec:
         volumeMounts:
         - name:  project-service-config
           mountPath: /app/config.yaml
+          subPath: config.yaml
+
+      imagePullSecrets:
+      - name: regcred
+
       volumes:
       - name:  project-service-config
         configMap:
