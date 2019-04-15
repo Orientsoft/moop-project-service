@@ -13,6 +13,6 @@ COPY --from=builder /install /usr/local
 WORKDIR /app
 COPY application ./application
 COPY *.py ./
-COPY config.yaml .
+# COPY config.yaml .
 
 CMD [ "python", "-u", "run.py","-f", "config.yaml" ]
