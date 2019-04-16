@@ -7,9 +7,9 @@ spec:
   ports:
   - name: project-service-http
     nodePort: 31779
-    port: 7779
+    port: 80
     protocol: TCP
-    targetPort: 80
+    targetPort: 7779
   selector:
     app: moop
     service: project-service
