@@ -1,24 +1,13 @@
 from flask import Flask
-from optparse import OptionParser
+from copy import deepcopy
 import yaml
 
 
 def import_config():
-    parser = OptionParser()
-    parser.add_option('-f', '--file', action='store', type='string', dest='filename')
-    option, args = parser.parse_args()
-    f = open(option.filename, encoding='utf-8')
-    data = yaml.load(f)
-    f.close()
+    with open('config.yaml', 'r', encoding='utf-8') as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
     config = data['config']
-    cfg = {
-        'HOST': config['HOST'],
-        'PORT': config['PORT'],
-        'DEBUG': config['DEBUG'],
-        'SECRET_KEY': config['SECRET_KEY'],
-        'MONGODB_URL': config['MONGODB_URL'],
-        'LOG_FORMAT': config['LOG_FORMAT']
-    }
+    cfg = deepcopy(config)
     return cfg
 
 
