@@ -10,7 +10,7 @@ data:
         HOST:
           '0.0.0.0'
         PORT:
-          7779
+          80
         DEBUG:
           true
         SECRET_KEY:

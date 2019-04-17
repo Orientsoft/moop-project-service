@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: moop-project-service
-        image: registry.datadynamic.io/moop/moop-project-service:20190412
+        image: registry.datadynamic.io/moop/moop-project-service:19d9cb9
         volumeMounts:
         - name:  project-service-config
           mountPath: /app/config.yaml

@@ -15,4 +15,4 @@ COPY application ./application
 COPY *.py ./
 # COPY config.yaml .
 
-CMD [ "python", "-u", "run.py","-f", "config.yaml" ]
+CMD [ "python",  "run.py","-f", "config.yaml" ]
