@@ -145,17 +145,18 @@ def project_list():
                 }
             return jsonify(project_dict)
         query = [ObjectId(x) for x in request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ', '').split(',')] if request.args.get('tag') else None
+        querySet = {'tag': {'$in': query}}
         if request.args.get('all'):
             page = pageSize = None
         else:
-            count = project_app(requestObj={'tag': {'$in': query}}).project_count()
+            count = project_app(requestObj=querySet).project_count()
             if count % pageSize == 0:
                 totalPage = count // pageSize if count != 0 else 1
             else:
                 totalPage = (count // pageSize) + 1
             if page > totalPage:
                 return raise_status(400, '页数超出范围')
-        projects_list = project_app(requestObj={'tag': {'$in': query}}).project_find_all(page, pageSize)
+        projects_list = project_app(requestObj=querySet).project_find_all(page, pageSize)
         project_ln_list = []
         for project_model in projects_list:
             if project_model.base is None:
@@ -426,7 +427,7 @@ def project_tag():
             return raise_status(500, '后台异常')
         tag = []
         for type_model in type_list:
-            count = PROJECT.objects.raw({'tag': type_model._id}).count()
+            count = PROJECT.objects.raw({'tag': type_model._id, 'delete': False}).count()
             tag.append({
                 'id': str(type_model._id),
                 'name': type_model.name,
