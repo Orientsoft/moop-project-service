@@ -13,96 +13,102 @@ def project_create():
     from application.project_app import project_app
     from model import PROJECT
     requestObj = request.json
-    requestObj['creator'] = ObjectId(requestObj['creator'])
-    # https://github.com/NickeryXu/moop-tenant-service.git
-    git_list = requestObj['githuburl'].split('/')
-    git_account = git_list[3] + '/'
-    if '.git' in git_list[4]:
-        repo = git_list[4][: -4] + '/'
-    else:
-        repo = git_list[4] + '/'
-    url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
     try:
-        r = requests.get(url=url)
-        labs = r.json()['labs']
-    except Exception as e:
-        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return raise_status(400, '获取元数据失败')
-    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec', 'tag']
-    requestObj = filter(query_list=query_list, updateObj=requestObj)
-    if project_app(requestObj={'title': requestObj['title']}).project_check():
-        return raise_status(400, 'project标题重复')
-    if not requestObj.get('base'):
-        requestObj['base'] = None
-    else:
-        requestObj['base'] = ObjectId(requestObj['base'])
-        try:
-            PROJECT.objects.get({'_id': requestObj['base']})
-        except PROJECT.DoesNotExist:
-            return raise_status(400, '无效的引用信息')
-    try:
-        project_model = project_app(requestObj=requestObj).project_create()
-    except Exception as e:
-        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return raise_status(500, '后台异常')
-    lab_list = []
-    for lab in labs:
-        index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
-        lab_list.append({
-            'id': str(project_model._id) + index,
-            'filename': lab.keys()[0],
-            'name': lab.values()[0]
-        })
-    try:
-        project_app(requestObj={'_id': project_model._id}, updateObj={'labs': lab_list}).project_update_set()
-    except Exception as e:
-        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return raise_status(500, '后台异常')
-    if project_model.base is None:
-        base = None
-    else:
-        if request.args.get('embed'):
-            if project_model.base.base is None:
-                base_reference = None
-            else:
-                base_reference = str(project_model.base.base._id)
-            base = {
-                'id': str(project_model.base._id),
-                'creator': str(project_model.base.creator),
-                'description': project_model.base.description,
-                'title': project_model.base.title,
-                'requirement': project_model.base.requirement,
-                'material': project_model.base.material,
-                'timeConsume': project_model.base.timeConsume,
-                'tag': project_model.base.tag.name,
-                'reference': project_model.base.reference,
-                'labs': project_model.base.labs,
-                'image': project_model.base.image,
-                'base': base_reference,
-                'spec': project_model.base.spec,
-                'createdAt': project_model.base.createdAt,
-                'updatedAt': project_model.base.updatedAt
-            }
+        requestObj['creator'] = ObjectId(requestObj['creator'])
+        requestObj['tag'] = ObjectId(requestObj['tag'])
+        git_list = requestObj['githuburl'].split('/')
+        git_account = git_list[3] + '/'
+        if '.git' in git_list[4]:
+            repo = git_list[4][: -4] + '/'
         else:
-            base = str(project_model.base._id)
-    data = {
-        'id': str(project_model._id),
-        'creator': str(project_model.creator),
-        'title': project_model.title,
-        'description': project_model.description,
-        'requirement': project_model.requirement,
-        'material': project_model.material,
-        'timeConsume': project_model.timeConsume,
-        'tag': project_model.tag.name,
-        'labs': lab_list,
-        'reference': project_model.reference,
-        'image': project_model.image,
-        'base': base,
-        'spec': project_model.spec,
-        'createdAt': project_model.createdAt,
-        'updatedAt': project_model.updatedAt
-    }
+            repo = git_list[4] + '/'
+        url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
+        try:
+            r = requests.get(url=url)
+            labs = r.json()['labs']
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+            return raise_status(400, '获取元数据失败')
+        query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+                      'material', 'reference', 'image', 'base', 'spec', 'tag']
+        requestObj = filter(query_list=query_list, updateObj=requestObj)
+        if project_app(requestObj={'title': requestObj['title']}).project_check():
+            return raise_status(400, 'project标题重复')
+        if not requestObj.get('base'):
+            requestObj['base'] = None
+        else:
+            requestObj['base'] = ObjectId(requestObj['base'])
+            try:
+                PROJECT.objects.get({'_id': requestObj['base']})
+            except PROJECT.DoesNotExist:
+                return raise_status(400, '无效的引用信息')
+        try:
+            project_model = project_app(requestObj=requestObj).project_create()
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+            return raise_status(500, '后台异常')
+        lab_list = []
+        for lab in labs:
+            index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
+            key_list = list(lab.keys())
+            value_list = list(lab.values())
+            lab_list.append({
+                'id': str(project_model._id) + index,
+                'filename': key_list[0],
+                'name': value_list[0]
+            })
+        try:
+            project_app(requestObj={'_id': project_model._id}, updateObj={'labs': lab_list}).project_update_set()
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+            return raise_status(500, '后台异常')
+        if project_model.base is None:
+            base = None
+        else:
+            if request.args.get('embed'):
+                if project_model.base.base is None:
+                    base_reference = None
+                else:
+                    base_reference = str(project_model.base.base._id)
+                base = {
+                    'id': str(project_model.base._id),
+                    'creator': str(project_model.base.creator),
+                    'description': project_model.base.description,
+                    'title': project_model.base.title,
+                    'requirement': project_model.base.requirement,
+                    'material': project_model.base.material,
+                    'timeConsume': project_model.base.timeConsume,
+                    'tag': project_model.base.tag.name,
+                    'reference': project_model.base.reference,
+                    'labs': project_model.base.labs,
+                    'image': project_model.base.image,
+                    'base': base_reference,
+                    'spec': project_model.base.spec,
+                    'createdAt': project_model.base.createdAt,
+                    'updatedAt': project_model.base.updatedAt
+                }
+            else:
+                base = str(project_model.base._id)
+        data = {
+            'id': str(project_model._id),
+            'creator': str(project_model.creator),
+            'title': project_model.title,
+            'description': project_model.description,
+            'requirement': project_model.requirement,
+            'material': project_model.material,
+            'timeConsume': project_model.timeConsume,
+            'tag': project_model.tag.name,
+            'labs': lab_list,
+            'reference': project_model.reference,
+            'image': project_model.image,
+            'base': base,
+            'spec': project_model.spec,
+            'createdAt': project_model.createdAt,
+            'updatedAt': project_model.updatedAt
+        }
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return raise_status(500, '后台异常')
     return jsonify(data)
 
 
@@ -145,7 +151,7 @@ def project_list():
                 }
             return jsonify(project_dict)
         query = [ObjectId(x) for x in request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ', '').split(',')] if request.args.get('tag') else None
-        querySet = {'tag': {'$in': query}}
+        querySet = {'tag': {'$in': query}} if query else None
         if request.args.get('all'):
             page = pageSize = None
         else:

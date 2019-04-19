@@ -24,6 +24,7 @@ class project_app():
                 description=self.requestObj['description'],
                 requirement=self.requestObj['requirement'],
                 material=self.requestObj['material'],
+                tag=self.requestObj['tag'],
                 timeConsume=self.requestObj['timeConsume'],
                 reference=self.requestObj['reference'],
                 image=self.requestObj['image'],
