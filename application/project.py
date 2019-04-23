@@ -150,7 +150,10 @@ def project_list():
                     'updatedAt': project_model.updatedAt
                 }
             return jsonify(project_dict)
-        query = [ObjectId(x) for x in request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ', '').split(',')] if request.args.get('tag') else None
+        query = [ObjectId(x) for x in
+                 request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ',
+                                                                                                                 '').split(
+                     ',')] if request.args.get('tag') else None
         querySet = {'tag': {'$in': query}} if query else None
         if request.args.get('all'):
             page = pageSize = None
@@ -219,6 +222,7 @@ def project_list():
             }
         return jsonify(returnObj)
     except Exception as e:
+        logging.error('error id: %s' % i)
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
 
