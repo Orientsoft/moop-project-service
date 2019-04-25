@@ -3,3 +3,5 @@ pymodm==0.4.1
 PyYAML==5.1
 bson==0.5.8
 requests==2.21.0
+urllib3==1.24.1
+Werkzeug==0.14.1
