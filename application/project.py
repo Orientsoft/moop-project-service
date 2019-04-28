@@ -39,7 +39,7 @@ def project_create():
         else:
             requestObj['base'] = ObjectId(requestObj['base'])
             try:
-                PROJECT.objects.get({'_id': requestObj['base']})
+                PROJECT.objects.get({'_id': requestObj['base'], 'delete': False})
             except PROJECT.DoesNotExist:
                 return raise_status(400, '无效的引用信息')
         try:
@@ -125,7 +125,7 @@ def project_list():
             ObjectId_list = []
             for i in id_list:
                 ObjectId_list.append(ObjectId(i))
-            model_list = list(PROJECT.objects.raw({'_id': {'$in': ObjectId_list}}))
+            model_list = list(PROJECT.objects.raw({'_id': {'$in': ObjectId_list}, 'delete': False}))
             project_dict = {}
             for project_model in model_list:
                 if project_model.base is None:
