@@ -467,8 +467,8 @@ def project_management():
     search = request.args.get('search', [])
     filt = request.args.get('filter')
     status = request.args.get('all')
-    page = request.args.get('page', 1 if not status else None)
-    pageSize = request.args.get('pageSize', 20 if not status else None)
+    page = int(request.args.get('page', 1)) if not status else None
+    pageSize = int(request.args.get('pageSize', 20)) if not status else None
     order = ()
     for x in sort:
         order += [x, 1]
@@ -494,4 +494,4 @@ def project_management():
             'title': model.title,
             'creator': str(model.creator)
         })
-    return jsonify({'count': count, 'returnObj': requestObj})
+    return jsonify({'count': count, 'returnObj': returnObj})
