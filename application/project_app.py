@@ -47,8 +47,7 @@ class project_app():
                 project = list(PROJECT.objects.raw(self.requestObj))
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            info = '后台异常'
-            return raise_status(500, info)
+            raise
         return project
 
     def project_find_one(self):
@@ -59,8 +58,7 @@ class project_app():
             return None
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            info = '后台异常'
-            return raise_status(500, info)
+            raise
         return project
 
     def project_update_set(self):
@@ -69,15 +67,14 @@ class project_app():
             PROJECT.objects.raw(self.requestObj).update({'$set': self.updateObj})
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            return raise_status(500, '后台异常')
+            raise
 
     def project_delete(self):
         try:
             PROJECT.objects.raw(self.requestObj).update({'$set': {'delete': True}})
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            info = '后台异常'
-            return raise_status(500, info)
+            raise
 
     def project_count(self):
         try:
@@ -85,7 +82,7 @@ class project_app():
             return count
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            return raise_status(500, '后台异常')
+            raise
 
     def project_check(self):
         try:
@@ -104,4 +101,15 @@ class project_app():
         try:
             PROJECT.objects.get({'_id': projectId, 'delete': False})
         except PROJECT.DoesNotExist:
+            raise
+
+    def project_find_many_by_order(self, page=None, pageSize=None, order=None):
+        try:
+            if page and pageSize:
+                model_list = list(PROJECT.objects.raw(self.requestObj).order_by(order).skip((page - 1) * pageSize).limit(pageSize))
+            else:
+                model_list = list(PROJECT.objects.raw(self.requestObj).order_by(order))
+            return model_list
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             raise

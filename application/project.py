@@ -155,17 +155,21 @@ def project_list():
                                                                                                                  '').split(
                      ',')] if request.args.get('tag') else None
         querySet = {'tag': {'$in': query}} if query else None
-        if request.args.get('all'):
-            page = pageSize = None
-        else:
-            count = project_app(requestObj=querySet).project_count()
-            if count % pageSize == 0:
-                totalPage = count // pageSize if count != 0 else 1
+        try:
+            if request.args.get('all'):
+                page = pageSize = None
             else:
-                totalPage = (count // pageSize) + 1
-            if page > totalPage:
-                return raise_status(400, '页数超出范围')
-        projects_list = project_app(requestObj=querySet).project_find_all(page, pageSize)
+                count = project_app(requestObj=querySet).project_count()
+                if count % pageSize == 0:
+                    totalPage = count // pageSize if count != 0 else 1
+                else:
+                    totalPage = (count // pageSize) + 1
+                if page > totalPage:
+                    return raise_status(400, '页数超出范围')
+            projects_list = project_app(requestObj=querySet).project_find_all(page, pageSize)
+        except Exception as e:
+            logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+            return '后台异常', 500
         project_ln_list = []
         for project_model in projects_list:
             if project_model.base is None:
@@ -317,8 +321,12 @@ def project_replace(projectId):
             project_app().project_reference_check(reference=updateObj['base'])
     except PROJECT.DoesNotExist:
         return raise_status(400, '引用错误')
-    project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
-    project = project_app(requestObj=requestObj).project_find_one()
+    try:
+        project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
+        project = project_app(requestObj=requestObj).project_find_one()
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
     if project._id == project.base:
         baseId = None
     else:
@@ -373,8 +381,12 @@ def project_change(projectId):
             project_app().project_reference_check(reference=updateObj['base'])
     except PROJECT.DoesNotExist:
         return jsonify({'error': raise_status(400, 'referenceError')})
-    project_app(requestObj=requestObj, updateObj=request.json).project_update_set()
-    project = project_app(requestObj=requestObj).project_find_one()
+    try:
+        project_app(requestObj=requestObj, updateObj=request.json).project_update_set()
+        project = project_app(requestObj=requestObj).project_find_one()
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
     if project._id == project.base:
         baseId = None
     else:
@@ -409,13 +421,13 @@ def project_delete(projectId):
     try:
         projectId = ObjectId(projectId)
         project_app().projectId_check(projectId=projectId)
+        requestObj = {'_id': projectId}
+        project_app(requestObj=requestObj).project_delete()
     except PROJECT.DoesNotExist:
         return raise_status(400, '无效的项目')
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return jsonify({'error': raise_status(400, '错误的ObjectId')})
-    requestObj = {'_id': projectId}
-    project_app(requestObj=requestObj).project_delete()
     return raise_status(200)
 
 
@@ -446,3 +458,40 @@ def project_tag():
         category['type'] = tag
         tag_list.append(category)
     return jsonify(tag_list)
+
+
+@projects.route('/project/management', methods=['GET'])
+def project_management():
+    from application.project_app import project_app
+    sort = request.args.get('sort', [])
+    search = request.args.get('search', [])
+    filt = request.args.get('filter')
+    status = request.args.get('all')
+    page = request.args.get('page', 1 if not status else None)
+    pageSize = request.args.get('pageSize', 20 if not status else None)
+    order = ()
+    for x in sort:
+        order += [x, 1]
+    requestObj = {}
+    for x in search:
+        requestObj = dict(requestObj, **x)
+    # 存在过滤数组
+    if filt:
+        requestObj['_id'] = {'$nin': [ObjectId(x) for x in filt]}
+    # 此时总数已经考虑了过滤数组
+    try:
+        count = project_app(requestObj=requestObj).project_count()
+        model_list = project_app(requestObj=requestObj).project_find_many_by_order(page=page, pageSize=pageSize,
+                                                                                   order=order)
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
+    # 只返回需要数据，_id、title、creator
+    returnObj = []
+    for model in model_list:
+        returnObj.append({
+            'id': str(model._id),
+            'title': model.title,
+            'creator': str(model.creator)
+        })
+    return jsonify({'count': count, 'returnObj': requestObj})
