@@ -16,14 +16,14 @@ def project_create():
     try:
         requestObj['creator'] = ObjectId(requestObj['creator'])
         requestObj['tag'] = ObjectId(requestObj['tag'])
-        git_list = requestObj['githuburl'].split('/')
-        git_account = git_list[3] + '/'
-        if '.git' in git_list[4]:
-            repo = git_list[4][: -4] + '/'
-        else:
-            repo = git_list[4] + '/'
-        url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
         try:
+            git_list = requestObj['githuburl'].split('/')
+            git_account = git_list[3] + '/'
+            if '.git' in git_list[4]:
+                repo = git_list[4][: -4] + '/'
+            else:
+                repo = git_list[4] + '/'
+            url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
             r = requests.get(url=url)
             labs = r.json()['labs']
         except Exception as e:
