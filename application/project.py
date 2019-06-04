@@ -158,7 +158,12 @@ def project_list():
                  request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ',
                                                                                                                  '').split(
                      ',')] if request.args.get('tag') else None
-        querySet = {'tag': {'$in': query}} if query else None
+        creator = request.args.get('creator')
+        querySet = {}
+        if query:
+            querySet['tag'] = {'$in': query}
+        if creator:
+            querySet['creator'] = ObjectId(creator)
         try:
             if request.args.get('all'):
                 page = pageSize = None
