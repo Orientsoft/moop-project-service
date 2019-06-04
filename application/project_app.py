@@ -137,7 +137,7 @@ class project_app():
                 'category': model.tag.category.name,
                 'name': model.tag.name
             },
-            'image': str(model.image._id) if not embed else project_app().unfold_image(model.image),
+            'image': model.image.url,
             'timeConsume': model.timeConsume,
             'base': (str(model.base._id) if not embed else project_app().unfold_project(
                 model=model.base)) if model.base else None,

@@ -423,7 +423,7 @@ def project_tag():
     return jsonify(tag_list)
 
 
-@projects.route('/project/management', methods=['GET'])
+@projects.route('/projects/management', methods=['GET'])
 def project_management():
     from application.project_app import project_app
     sort = request.args.get('sort', [])
@@ -460,7 +460,7 @@ def project_management():
     return jsonify({'count': count, 'returnObj': returnObj})
 
 
-@projects.route('/project/image', methods=['GET'])
+@projects.route('/projects/image', methods=['GET'])
 def project_image():
     from model import IMAGE
     from application.project_app import project_app
