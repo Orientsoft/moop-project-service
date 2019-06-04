@@ -106,10 +106,43 @@ class project_app():
     def project_find_many_by_order(self, page=None, pageSize=None, order=None):
         try:
             if page and pageSize:
-                model_list = list(PROJECT.objects.raw(self.requestObj).order_by(order).skip((page - 1) * pageSize).limit(pageSize))
+                model_list = list(
+                    PROJECT.objects.raw(self.requestObj).order_by(order).skip((page - 1) * pageSize).limit(pageSize))
             else:
                 model_list = list(PROJECT.objects.raw(self.requestObj).order_by(order))
             return model_list
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             raise
+
+    def unfold_image(self, model):
+        return {
+            'id': str(model._id),
+            'url': model.url,
+            'desc': model.desc,
+            'package': model.package
+        }
+
+    def unfold_project(self, model, embed=None):
+        return {
+            'id': str(model._id),
+            'creator': str(model.creator),
+            'title': model.title,
+            'description': model.description,
+            'requirement': model.requirement,
+            'material': model.material,
+            'reference': model.reference,
+            'tag': str(model.tag._id) if not embed else {
+                'id': str(model.tag._id),
+                'category': model.tag.category.name,
+                'name': model.tag.name
+            },
+            'image': str(model.image._id) if not embed else project_app().unfold_image(model.image),
+            'timeConsume': model.timeConsume,
+            'base': (str(model.base._id) if not embed else project_app().unfold_project(
+                model=model.base)) if model.base else None,
+            'spec': model.spec,
+            'createdAt': model.createdAt,
+            'updatedAt': model.updatedAt,
+            'labs': model.labs
+        }

@@ -62,50 +62,52 @@ def project_create():
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             return raise_status(500, '后台异常')
-        if project_model.base is None:
-            base = None
-        else:
-            if request.args.get('embed'):
-                if project_model.base.base is None:
-                    base_reference = None
-                else:
-                    base_reference = str(project_model.base.base._id)
-                base = {
-                    'id': str(project_model.base._id),
-                    'creator': str(project_model.base.creator),
-                    'description': project_model.base.description,
-                    'title': project_model.base.title,
-                    'requirement': project_model.base.requirement,
-                    'material': project_model.base.material,
-                    'timeConsume': project_model.base.timeConsume,
-                    'tag': project_model.base.tag.name,
-                    'reference': project_model.base.reference,
-                    'labs': project_model.base.labs,
-                    'image': project_model.base.image,
-                    'base': base_reference,
-                    'spec': project_model.base.spec,
-                    'createdAt': project_model.base.createdAt,
-                    'updatedAt': project_model.base.updatedAt
-                }
-            else:
-                base = str(project_model.base._id)
-        data = {
-            'id': str(project_model._id),
-            'creator': str(project_model.creator),
-            'title': project_model.title,
-            'description': project_model.description,
-            'requirement': project_model.requirement,
-            'material': project_model.material,
-            'timeConsume': project_model.timeConsume,
-            'tag': project_model.tag.name,
-            'labs': lab_list,
-            'reference': project_model.reference,
-            'image': project_model.image,
-            'base': base,
-            'spec': project_model.spec,
-            'createdAt': project_model.createdAt,
-            'updatedAt': project_model.updatedAt
-        }
+        project_model = PROJECT.objects.get({'_id': project_model._id, 'delete': False})
+        data = project_app().unfold_project(model=project_model, embed=request.args.get('embed'))
+        # if project_model.base is None:
+        #     base = None
+        # else:
+        #     if request.args.get('embed'):
+        #         if project_model.base.base is None:
+        #             base_reference = None
+        #         else:
+        #             base_reference = str(project_model.base.base._id)
+        #         base = {
+        #             'id': str(project_model.base._id),
+        #             'creator': str(project_model.base.creator),
+        #             'description': project_model.base.description,
+        #             'title': project_model.base.title,
+        #             'requirement': project_model.base.requirement,
+        #             'material': project_model.base.material,
+        #             'timeConsume': project_model.base.timeConsume,
+        #             'tag': project_model.base.tag.name,
+        #             'reference': project_model.base.reference,
+        #             'labs': project_model.base.labs,
+        #             'image': project_model.base.image,
+        #             'base': base_reference,
+        #             'spec': project_model.base.spec,
+        #             'createdAt': project_model.base.createdAt,
+        #             'updatedAt': project_model.base.updatedAt
+        #         }
+        #     else:
+        #         base = str(project_model.base._id)
+        # data = {
+        #     'id': str(project_model._id),
+        #     'creator': str(project_model.creator),
+        #     'title': project_model.title,
+        #     'description': project_model.description,
+        #     'requirement': project_model.requirement,
+        #     'material': project_model.material,
+        #     'timeConsume': project_model.timeConsume,
+        #     'tag': project_model.tag.name,
+        #     'labs': lab_list,
+        #     'reference': project_model.reference,
+        #     'image': project_model.image,
+        #     'base': base,
+        #     'spec': project_model.spec,
+        #     'createdAt': project_model.createdAt,
+        #     'updatedAt': project_model.updatedAt
+        # }
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
@@ -128,27 +130,29 @@ def project_list():
             model_list = list(PROJECT.objects.raw({'_id': {'$in': ObjectId_list}, 'delete': False}))
             project_dict = {}
             for project_model in model_list:
-                if project_model.base is None:
-                    base = None
-                else:
-                    base = str(project_model.base._id)
-                project_dict[str(project_model._id)] = {
-                    'id': str(project_model._id),
-                    'creator': str(project_model.creator),
-                    'description': project_model.description,
-                    'title': project_model.title,
-                    'requirement': project_model.requirement,
-                    'labs': project_model.labs,
-                    'tag': project_model.tag.name,
-                    'material': project_model.material,
-                    'reference': project_model.reference,
-                    'timeConsume': project_model.timeConsume,
-                    'image': project_model.image,
-                    'base': base,
-                    'spec': project_model.spec,
-                    'createdAt': project_model.createdAt,
-                    'updatedAt': project_model.updatedAt
-                }
+                project_dict[str(project_model._id)] = project_app().unfold_project(model=project_model,
+                                                                                    embed=request.args.get('embed'))
+                # if project_model.base is None:
+                #     base = None
+                # else:
+                #     base = str(project_model.base._id)
+                # project_dict[str(project_model._id)] = {
+                #     'id': str(project_model._id),
+                #     'creator': str(project_model.creator),
+                #     'description': project_model.description,
+                #     'title': project_model.title,
+                #     'requirement': project_model.requirement,
+                #     'labs': project_model.labs,
+                #     'tag': project_model.tag.name,
+                #     'material': project_model.material,
+                #     'reference': project_model.reference,
+                #     'timeConsume': project_model.timeConsume,
+                #     'image': project_model.image,
+                #     'base': base,
+                #     'spec': project_model.spec,
+                #     'createdAt': project_model.createdAt,
+                #     'updatedAt': project_model.updatedAt
+                # }
             return jsonify(project_dict)
         query = [ObjectId(x) for x in
                  request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ',
@@ -172,51 +176,7 @@ def project_list():
             return '后台异常', 500
         project_ln_list = []
         for project_model in projects_list:
-            if project_model.base is None:
-                base = None
-            else:
-                if request.args.get('embed'):
-                    if project_model.base.base is None:
-                        base_reference = None
-                    else:
-                        base_reference = str(project_model.base.base._id)
-                    base = {
-                        'id': str(project_model.base._id),
-                        'creator': str(project_model.base.creator),
-                        'description': project_model.base.description,
-                        'requirement': project_model.base.requirement,
-                        'title': project_model.base.title,
-                        'material': project_model.base.material,
-                        'tag': project_model.base.tag.name,
-                        'timeConsume': project_model.base.timeConsume,
-                        'labs': project_model.base.labs,
-                        'reference': project_model.base.reference,
-                        'image': project_model.base.image,
-                        'base': base_reference,
-                        'spec': project_model.base.spec,
-                        'createdAt': project_model.base.createdAt,
-                        'updatedAt': project_model.base.updatedAt
-                    }
-                else:
-                    base = str(project_model.base._id)
-            data = {
-                'id': str(project_model._id),
-                'creator': str(project_model.creator),
-                'description': project_model.description,
-                'requirement': project_model.requirement,
-                'title': project_model.title,
-                'material': project_model.material,
-                'labs': project_model.labs,
-                'reference': project_model.reference,
-                'tag': project_model.tag.name,
-                'timeConsume': project_model.timeConsume,
-                'image': project_model.image,
-                'base': base,
-                'spec': project_model.spec,
-                'createdAt': project_model.createdAt,
-                'updatedAt': project_model.updatedAt
-            }
-            project_ln_list.append(data)
+            project_ln_list.append(project_app().unfold_project(model=project_model, embed=request.args.get('embed')))
         if not request.args.get('all'):
             meta = {'page': page, 'pageSize': pageSize, 'total': count, 'totalPage': totalPage}
             returnObj = {'projects': project_ln_list, 'meta': meta}
@@ -247,50 +207,51 @@ def get_project(projectId):
         return raise_status(400, '错误的ObjectId')
     requestObj = {'_id': projectId}
     project = project_app(requestObj=requestObj).project_find_one()
-    if project.base == None:
-        base = None
-    else:
-        if request.args.get('embed'):
-            if project.base.base is None:
-                base_reference = None
-            else:
-                base_reference = str(project.base.base._id)
-            base = {
-                'id': str(project.base._id),
-                'creator': str(project.base.creator),
-                'description': project.base.description,
-                'requirement': project.base.requirement,
-                'title': project.base.title,
-                'tag': project.base.tag.name,
-                'timeConsume': project.base.timeConsume,
-                'labs': project.base.labs,
-                'material': project.base.material,
-                'reference': project.base.reference,
-                'image': project.base.image,
-                'base': base_reference,
-                'spec': project.base.spec,
-                'createdAt': project.base.createdAt,
-                'updatedAt': project.base.updatedAt
-            }
-        else:
-            base = str(project.base._id)
-    data = {
-        'id': str(project._id),
-        'creator': str(project.creator),
-        'description': project.description,
-        'requirement': project.requirement,
-        'material': project.material,
-        'title': project.title,
-        'tag': project.tag.name,
-        'labs': project.labs,
-        'reference': project.reference,
-        'timeConsume': project.timeConsume,
-        'image': project.image,
-        'base': base,
-        'spec': project.spec,
-        'createdAt': project.createdAt,
-        'updatedAt': project.updatedAt
-    }
+    data = project_app().unfold_project(model=project, embed=request.args.get('embed'))
+    # if project.base == None:
+    #     base = None
+    # else:
+    #     if request.args.get('embed'):
+    #         if project.base.base is None:
+    #             base_reference = None
+    #         else:
+    #             base_reference = str(project.base.base._id)
+    #         base = {
+    #             'id': str(project.base._id),
+    #             'creator': str(project.base.creator),
+    #             'description': project.base.description,
+    #             'requirement': project.base.requirement,
+    #             'title': project.base.title,
+    #             'tag': project.base.tag.name,
+    #             'timeConsume': project.base.timeConsume,
+    #             'labs': project.base.labs,
+    #             'material': project.base.material,
+    #             'reference': project.base.reference,
+    #             'image': project.base.image,
+    #             'base': base_reference,
+    #             'spec': project.base.spec,
+    #             'createdAt': project.base.createdAt,
+    #             'updatedAt': project.base.updatedAt
+    #         }
+    #     else:
+    #         base = str(project.base._id)
+    # data = {
+    #     'id': str(project._id),
+    #     'creator': str(project.creator),
+    #     'description': project.description,
+    #     'requirement': project.requirement,
+    #     'material': project.material,
+    #     'title': project.title,
+    #     'tag': project.tag.name,
+    #     'labs': project.labs,
+    #     'reference': project.reference,
+    #     'timeConsume': project.timeConsume,
+    #     'image': project.image,
+    #     'base': base,
+    #     'spec': project.spec,
+    #     'createdAt': project.createdAt,
+    #     'updatedAt': project.updatedAt
+    # }
     return jsonify(data)
 
 
@@ -327,30 +288,31 @@ def project_replace(projectId):
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return '后台异常', 500
-    if project._id == project.base:
-        baseId = None
-    else:
-        if project.base is None:
-            baseId = project.base
-        else:
-            baseId = str(project.base._id)
-    returnObj = {
-        'id': str(project._id),
-        'creator': str(project.creator),
-        'title': project.title,
-        'description': project.description,
-        'requirement': project.requirement,
-        'material': project.material,
-        'labs': project.labs,
-        'tag': project.tag.name,
-        'timeConsume': project.timeConsume,
-        'reference': project.reference,
-        'image': project.image,
-        'base': baseId,
-        'spec': project.spec,
-        'createdAt': project.createdAt,
-        'updatedAt': project.updatedAt
-    }
+    returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
+    # if project._id == project.base:
+    #     baseId = None
+    # else:
+    #     if project.base is None:
+    #         baseId = project.base
+    #     else:
+    #         baseId = str(project.base._id)
+    # returnObj = {
+    #     'id': str(project._id),
+    #     'creator': str(project.creator),
+    #     'title': project.title,
+    #     'description': project.description,
+    #     'requirement': project.requirement,
+    #     'material': project.material,
+    #     'labs': project.labs,
+    #     'tag': project.tag.name,
+    #     'timeConsume': project.timeConsume,
+    #     'reference': project.reference,
+    #     'image': project.image,
+    #     'base': baseId,
+    #     'spec': project.spec,
+    #     'createdAt': project.createdAt,
+    #     'updatedAt': project.updatedAt
+    # }
     return jsonify(returnObj)
 
 
@@ -387,27 +349,28 @@ def project_change(projectId):
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return '后台异常', 500
-    if project._id == project.base:
-        baseId = None
-    else:
-        baseId = str(project.base._id)
-    returnObj = {
-        'id': str(project._id),
-        'creator': str(project.creator),
-        'title': project.title,
-        'description': project.description,
-        'requirement': project.requirement,
-        'material': project.material,
-        'reference': project.reference,
-        'tag': project.tag.name,
-        'labs': project.labs,
-        'timeConsume': project.timeConsume,
-        'image': project.image,
-        'base': baseId,
-        'spec': project.spec,
-        'createdAt': project.createdAt,
-        'updatedAt': project.updatedAt
-    }
+    returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
+    # if project._id == project.base:
+    #     baseId = None
+    # else:
+    #     baseId = str(project.base._id)
+    # returnObj = {
+    #     'id': str(project._id),
+    #     'creator': str(project.creator),
+    #     'title': project.title,
+    #     'description': project.description,
+    #     'requirement': project.requirement,
+    #     'material': project.material,
+    #     'reference': project.reference,
+    #     'tag': project.tag.name,
+    #     'labs': project.labs,
+    #     'timeConsume': project.timeConsume,
+    #     'image': project.image,
+    #     'base': baseId,
+    #     'spec': project.spec,
+    #     'createdAt': project.createdAt,
+    #     'updatedAt': project.updatedAt
+    # }
     return jsonify(returnObj)
 
 
@@ -495,3 +458,18 @@ def project_management():
             'creator': str(model.creator)
         })
     return jsonify({'count': count, 'returnObj': returnObj})
+
+
+@projects.route('/project/image', methods=['GET'])
+def project_image():
+    from model import IMAGE
+    from application.project_app import project_app
+    try:
+        model_list = list(IMAGE.objects.raw({'delete': False}))
+        return_list = []
+        for model in model_list:
+            return_list.append(project_app().unfold_image(model=model))
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
+    return jsonify(return_list)

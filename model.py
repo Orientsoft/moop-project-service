@@ -26,6 +26,17 @@ class TYPE(MongoModel):
         final = True
 
 
+class IMAGE(MongoModel):
+    url = CharField()
+    desc = CharField()
+    package = ListField()
+    delete = BooleanField()
+
+    class Meta:
+        collection_name = 'image'
+        final = True
+
+
 class PROJECT(MongoModel):
     creator = ObjectIdField()
     title = CharField()
@@ -34,7 +45,7 @@ class PROJECT(MongoModel):
     material = CharField()
     reference = CharField()
     tag = ReferenceField(TYPE)
-    image = CharField()
+    image = ReferenceField(IMAGE)
     labs = ListField()
     timeConsume = CharField()
     base = ReferenceField('PROJECT', blank=True)
