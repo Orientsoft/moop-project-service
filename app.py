@@ -29,3 +29,8 @@ register_blueprint()
 def index():
     from auth import raise_status
     return raise_status(200)
+
+
+@app.errorhandler(Exception)
+def error_handler(error):
+    return 'PROJECT-SERVICE 未知错误', 500
