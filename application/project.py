@@ -28,7 +28,7 @@ def project_create():
             labs = r.json()['labs']
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            return raise_status(400, '获取元数据失败')
+            return raise_status(400, 'github地址有误')
         query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
                       'material', 'reference', 'image', 'base', 'spec', 'tag']
         requestObj = filter(query_list=query_list, updateObj=requestObj)
