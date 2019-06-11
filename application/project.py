@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from auth import raise_status, filter
+from datetime import datetime
 import logging
 import traceback
 import requests
@@ -117,7 +118,7 @@ def project_create():
 @projects.route('/projects', methods=['GET'])
 def project_list():
     from application.project_app import project_app
-    from model import PROJECT
+    from model import PROJECT, PURCHASE
     try:
         page = int(request.args.get('page', '1'))
         pageSize = int(request.args.get('pageSize', '20'))
@@ -182,6 +183,18 @@ def project_list():
         project_ln_list = []
         for project_model in projects_list:
             project_ln_list.append(project_app().unfold_project(model=project_model, embed=request.args.get('embed')))
+        # TODO 在这里加purchase判断
+        if request.args.get('tenant'):
+            for project in project_ln_list:
+                purchases = list(PURCHASE.objects.raw(
+                    {'project': ObjectId(project['id']), 'purchaser': request.args.get('tenant'), 'delete': False}))
+                if purchases == []:
+                    project['purchase'] = False
+                for purchase in purchases:
+                    if purchase.limit > datetime.now():
+                        project['purchase'] = True
+                    elif purchase.limit < datetime.now() and not project.get('purchase'):
+                        project['purchase'] = False
         if not request.args.get('all'):
             meta = {'page': page, 'pageSize': pageSize, 'total': count, 'totalPage': totalPage}
             returnObj = {'projects': project_ln_list, 'meta': meta}
@@ -431,12 +444,14 @@ def project_tag():
 @projects.route('/projects/management', methods=['GET'])
 def project_management():
     from application.project_app import project_app
+    from model import PURCHASE
     sort = request.args.get('sort', [])
     search = request.args.get('search', [])
     filt = request.args.get('filter')
     status = request.args.get('all')
     page = int(request.args.get('page', 1)) if not status else None
     pageSize = int(request.args.get('pageSize', 20)) if not status else None
+    tenant = request.args.get('tenant')
     order = ()
     for x in sort:
         order += [x, 1]
@@ -457,10 +472,18 @@ def project_management():
     # 只返回需要数据，_id、title、creator
     returnObj = []
     for model in model_list:
+        # TODO 可以改成first方法
+        purchases = list(PURCHASE.objects.raw({'purchaser': ObjectId(tenant), 'project': model._id, 'delete': False}))
+        deadline = None
+        # 只选取最晚的limit
+        for purchase in purchases:
+            if not deadline or purchase.limit > deadline:
+                deadline = purchase.limit
         returnObj.append({
             'id': str(model._id),
             'title': model.title,
-            'creator': str(model.creator)
+            'creator': str(model.creator),
+            'limit': deadline
         })
     return jsonify({'count': count, 'returnObj': returnObj})
 
@@ -478,3 +501,45 @@ def project_image():
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return '后台异常', 500
     return jsonify(return_list)
+
+
+@projects.route('/purchase', methods=['GET'])
+def purchase_get():
+    from model import PURCHASE
+    from application.project_app import project_app
+    tenant = request.args.get('tenant')
+    try:
+        purchase_model = list(PURCHASE.objects.raw({'purchaser': ObjectId(tenant), 'delete': False}))
+        purchase_list = []
+        for purchase in purchase_model:
+            purchase_list.append(project_app().unfold_purchase(model=purchase, embed=request.args.get('embed')))
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
+    return jsonify(purchase_list)
+
+
+@projects.route('/purchase', methods=['POST'])
+def purchase_post():
+    from model import PURCHASE
+    from datetime import datetime
+    from application.project_app import project_app
+    # TODO 还需考虑上传的是个列表
+    requestObj = request.json
+    query_list = ['purchaser', 'limit', 'project', 'remark']
+    requestObj = filter(query_list=query_list, updateObj=requestObj, ObjectId_list=['project', 'purchaser'])
+    try:
+        model = PURCHASE(
+            purchaser=requestObj['purchaser'],
+            limit=datetime.strptime(requestObj['limit'].replace('T', ' '), '%Y-%m-%d %H:%M:%S'),
+            project=requestObj['project'],
+            remark=requestObj.get('remark'),
+            createdAt=datetime.now(),
+            updatedAt=datetime.now(),
+            delete=False
+        ).save()
+        purchase = project_app().unfold_purchase(model)
+    except Exception as e:
+        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+        return '后台异常', 500
+    return jsonify(purchase)

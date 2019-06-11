@@ -146,3 +146,14 @@ class project_app():
             'updatedAt': model.updatedAt,
             'labs': model.labs
         }
+
+    def unfold_purchase(self, model, embed=None):
+        return {
+            'id': str(model._id),
+            'purchaser': str(model.purchaser),
+            'limit': model.limit,
+            'project': str(model.project._id) if not embed else project_app().unfold_project(model=model.project),
+            'remark': model.remark,
+            'createdAt': model.createdAt,
+            'updatedAt': model.updatedAt
+        }

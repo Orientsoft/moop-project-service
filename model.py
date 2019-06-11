@@ -51,10 +51,24 @@ class PROJECT(MongoModel):
     base = ReferenceField('PROJECT', blank=True)
     # base = ReferenceField('PROJECT')
     spec = CharField()
-    delete = BooleanField()
+    delete = BooleanField(default=False)
     createdAt = DateTimeField()
     updatedAt = DateTimeField()
 
     class Meta:
         collection_name = 'project'
+        final = True
+
+
+class PURCHASE(MongoModel):
+    purchaser = ObjectIdField()
+    limit = DateTimeField()
+    project = ReferenceField(PROJECT)
+    remark = CharField(blank=True)
+    createdAt = DateTimeField()
+    updatedAt = DateTimeField()
+    delete = BooleanField(default=False)
+
+    class Meta:
+        collection_name = 'purchase'
         final = True
