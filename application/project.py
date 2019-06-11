@@ -187,7 +187,7 @@ def project_list():
         if request.args.get('tenant'):
             for project in project_ln_list:
                 purchases = list(PURCHASE.objects.raw(
-                    {'project': ObjectId(project['id']), 'purchaser': request.args.get('tenant'), 'delete': False}))
+                    {'project': ObjectId(project['id']), 'purchaser': ObjectId(request.args.get('tenant')), 'delete': False}))
                 if purchases == []:
                     project['purchase'] = False
                 for purchase in purchases:
