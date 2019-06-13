@@ -1,5 +1,7 @@
 from flask import Flask
 from copy import deepcopy
+import logging
+import traceback
 import yaml
 
 
@@ -19,7 +21,7 @@ for cfg in config:
 
 def register_blueprint():
     from application.project import projects
-    app.register_blueprint(projects, url_prefix='/service/v1')
+    app.register_blueprint(projects)
 
 
 register_blueprint()
@@ -33,4 +35,5 @@ def index():
 
 @app.errorhandler(Exception)
 def error_handler(error):
+    logging.error('Request Error: {}\nStack: {}\n'.format(error, traceback.format_exc()))
     return 'PROJECT-SERVICE 未知错误', 500

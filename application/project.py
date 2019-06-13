@@ -187,7 +187,8 @@ def project_list():
         if request.args.get('tenant'):
             for project in project_ln_list:
                 purchases = list(PURCHASE.objects.raw(
-                    {'project': ObjectId(project['id']), 'purchaser': ObjectId(request.args.get('tenant')), 'delete': False}))
+                    {'project': ObjectId(project['id']), 'purchaser': ObjectId(request.args.get('tenant')),
+                     'delete': False}))
                 if purchases == []:
                     project['purchase'] = False
                 for purchase in purchases:
@@ -412,7 +413,8 @@ def project_delete(projectId):
     return raise_status(200)
 
 
-@projects.route('/projects/tag', methods=['GET'])
+# 获取分类列表
+@projects.route('/tag', methods=['GET'])
 def project_tag():
     from model import CATEGORY, TYPE, PROJECT
     try:
@@ -488,7 +490,8 @@ def project_management():
     return jsonify({'count': count, 'returnObj': returnObj})
 
 
-@projects.route('/projects/image', methods=['GET'])
+# 获取镜像列表
+@projects.route('/image', methods=['GET'])
 def project_image():
     from model import IMAGE
     from application.project_app import project_app
@@ -503,6 +506,7 @@ def project_image():
     return jsonify(return_list)
 
 
+# 获取购买列表
 @projects.route('/purchase', methods=['GET'])
 def purchase_get():
     from model import PURCHASE
