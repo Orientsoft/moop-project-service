@@ -341,14 +341,15 @@ def project_change(projectId):
     from model import PROJECT
     from bson import ObjectId
 
+    # 校验projectid是否有异常
     try:
         projectId = ObjectId(projectId)
         project_app().projectId_check(projectId=projectId)
     except PROJECT.DoesNotExist:
-        return jsonify({'error': raise_status(400, 'projectIdError')})
+        return '实验已删除', 400
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return jsonify({'error': raise_status(400, 'ObjectIdError')})
+        return '后台异常', 500
     requestObj = {'_id': projectId}
     updateObj = request.json
     query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
@@ -361,9 +362,18 @@ def project_change(projectId):
             updateObj['base'] = ObjectId(updateObj['base'])
             project_app().project_reference_check(reference=updateObj['base'])
     except PROJECT.DoesNotExist:
-        return jsonify({'error': raise_status(400, 'referenceError')})
+        return '实验已被删除', 400
     try:
-        project_app(requestObj=requestObj, updateObj=request.json).project_update_set()
+        # 更新index.json
+        if updateObj.get('spec'):
+            git_list = updateObj['spec'].split('/')
+            git_account = git_list[3] + '/'
+            repo = git_list[4][: -4] + '/'
+            url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
+            r = requests.get(url=url)
+            labs = r.json()['labs']
+            updateObj['labs'] = labs
+        project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
