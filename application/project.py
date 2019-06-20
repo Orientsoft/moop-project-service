@@ -384,8 +384,6 @@ def project_change(projectId):
                     'name': value_list[0]
                 })
             updateObj['labs'] = lab_list
-        if updateObj.get('timeConsume'):
-            updateObj['timeConsume'] = str(updateObj['timeConsume']) + '学时'
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
