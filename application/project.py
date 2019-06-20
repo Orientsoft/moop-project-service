@@ -385,7 +385,7 @@ def project_change(projectId):
             updateObj['labs'] = lab_list
         if updateObj.get('timeConsume'):
             updateObj['timeConsume'] = str(updateObj['timeConsume']) + '学时'
-        logging.info("updateObj: ", str(updateObj))
+        logging.info("updateObj: %s" % str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
