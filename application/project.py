@@ -352,9 +352,9 @@ def project_change(projectId):
         return '后台异常', 500
     requestObj = {'_id': projectId}
     updateObj = request.json
-    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+    query_list = ['title', 'description', 'requirement', 'timeConsume',
                   'material', 'reference', 'image', 'base', 'spec', 'tag']
-    updateObj = filter(query_list=query_list, updateObj=updateObj)
+    updateObj = filter(query_list=query_list, updateObj=updateObj, ObjectId_list=['tag', 'image'])
     if updateObj.get('id'):
         del updateObj['id']
     try:
