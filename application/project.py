@@ -373,6 +373,7 @@ def project_change(projectId):
             r = requests.get(url=url)
             labs = r.json()['labs']
             updateObj['labs'] = labs
+        logging.info("updateObj: ", str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
