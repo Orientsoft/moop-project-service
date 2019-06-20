@@ -276,63 +276,64 @@ def get_project(projectId):
 
 @projects.route('/projects/<projectId>', methods=['PUT'])
 def project_replace(projectId):
-    from application.project_app import project_app
-    from model import PROJECT
-    from bson import ObjectId
+    # from application.project_app import project_app
+    # from model import PROJECT
+    # from bson import ObjectId
 
-    try:
-        projectId = ObjectId(projectId)
-        project_app().projectId_check(projectId=projectId)
-    except PROJECT.DoesNotExist:
-        return raise_status(400, '无效的项目')
-    except Exception as e:
-        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return raise_status(400, '错误的ObjectId')
-    requestObj = {'_id': projectId}
-    updateObj = request.json
-    query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec', 'tag']
-    updateObj = filter(query_list=query_list, updateObj=updateObj)
-    if updateObj.get('id'):
-        del updateObj['id']
-    try:
-        if updateObj.get('base') and updateObj.get('base') is not None:
-            updateObj['base'] = ObjectId(updateObj['base'])
-            project_app().project_reference_check(reference=updateObj['base'])
-    except PROJECT.DoesNotExist:
-        return raise_status(400, '引用错误')
-    try:
-        project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
-        project = project_app(requestObj=requestObj).project_find_one()
-    except Exception as e:
-        logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-        return '后台异常', 500
-    returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
-    # if project._id == project.base:
-    #     baseId = None
-    # else:
-    #     if project.base is None:
-    #         baseId = project.base
-    #     else:
-    #         baseId = str(project.base._id)
-    # returnObj = {
-    #     'id': str(project._id),
-    #     'creator': str(project.creator),
-    #     'title': project.title,
-    #     'description': project.description,
-    #     'requirement': project.requirement,
-    #     'material': project.material,
-    #     'labs': project.labs,
-    #     'tag': project.tag.name,
-    #     'timeConsume': project.timeConsume,
-    #     'reference': project.reference,
-    #     'image': project.image,
-    #     'base': baseId,
-    #     'spec': project.spec,
-    #     'createdAt': project.createdAt,
-    #     'updatedAt': project.updatedAt
-    # }
-    return jsonify(returnObj)
+    return '请改用PATCH接口', 400
+    # try:
+    #     projectId = ObjectId(projectId)
+    #     project_app().projectId_check(projectId=projectId)
+    # except PROJECT.DoesNotExist:
+    #     return raise_status(400, '无效的项目')
+    # except Exception as e:
+    #     logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+    #     return raise_status(400, '错误的ObjectId')
+    # requestObj = {'_id': projectId}
+    # updateObj = request.json
+    # query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
+    #               'material', 'reference', 'image', 'base', 'spec', 'tag']
+    # updateObj = filter(query_list=query_list, updateObj=updateObj)
+    # if updateObj.get('id'):
+    #     del updateObj['id']
+    # try:
+    #     if updateObj.get('base') and updateObj.get('base') is not None:
+    #         updateObj['base'] = ObjectId(updateObj['base'])
+    #         project_app().project_reference_check(reference=updateObj['base'])
+    # except PROJECT.DoesNotExist:
+    #     return raise_status(400, '引用错误')
+    # try:
+    #     project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
+    #     project = project_app(requestObj=requestObj).project_find_one()
+    # except Exception as e:
+    #     logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
+    #     return '后台异常', 500
+    # returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
+    # # if project._id == project.base:
+    # #     baseId = None
+    # # else:
+    # #     if project.base is None:
+    # #         baseId = project.base
+    # #     else:
+    # #         baseId = str(project.base._id)
+    # # returnObj = {
+    # #     'id': str(project._id),
+    # #     'creator': str(project.creator),
+    # #     'title': project.title,
+    # #     'description': project.description,
+    # #     'requirement': project.requirement,
+    # #     'material': project.material,
+    # #     'labs': project.labs,
+    # #     'tag': project.tag.name,
+    # #     'timeConsume': project.timeConsume,
+    # #     'reference': project.reference,
+    # #     'image': project.image,
+    # #     'base': baseId,
+    # #     'spec': project.spec,
+    # #     'createdAt': project.createdAt,
+    # #     'updatedAt': project.updatedAt
+    # # }
+    # return jsonify(returnObj)
 
 
 @projects.route('/projects/<projectId>', methods=['PATCH'])
@@ -385,7 +386,6 @@ def project_change(projectId):
             updateObj['labs'] = lab_list
         if updateObj.get('timeConsume'):
             updateObj['timeConsume'] = str(updateObj['timeConsume']) + '学时'
-        logging.info("updateObj: %s" % str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
