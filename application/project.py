@@ -578,3 +578,14 @@ def purchase_post():
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return '后台异常', 500
     return jsonify(purchase)
+
+
+@projects.route('/checks', methods=['GET'])
+def check_projects():
+    from model import PROJECT
+    projects = list(PROJECT.objects.raw({'delete': False}))
+    for project_model in projects:
+        if project_model.repoName is None:
+            PROJECT.objects.raw({'_id': project_model._id}).update(
+                {'$set': {'repoName': project_model.spec.split('/')[4][:-4]}})
+    return '校验完毕'
