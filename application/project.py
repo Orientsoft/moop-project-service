@@ -21,8 +21,10 @@ def project_create():
             git_list = requestObj['githuburl'].split('/')
             git_account = git_list[3] + '/'
             if '.git' in git_list[4]:
+                repoName = git_list[4][: -4]
                 repo = git_list[4][: -4] + '/'
             else:
+                repoName = git_list[4]
                 repo = git_list[4] + '/'
             url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
             r = requests.get(url=url)
@@ -44,6 +46,7 @@ def project_create():
             except PROJECT.DoesNotExist:
                 return raise_status(400, '无效的引用信息')
         try:
+            requestObj['repoName'] = repoName
             project_model = project_app(requestObj=requestObj).project_create()
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
@@ -369,6 +372,7 @@ def project_change(projectId):
         if updateObj.get('spec'):
             git_list = updateObj['spec'].split('/')
             git_account = git_list[3] + '/'
+            repoName = git_list[4][:-4]
             repo = git_list[4][: -4] + '/'
             url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
             r = requests.get(url=url)
@@ -384,6 +388,7 @@ def project_change(projectId):
                     'name': value_list[0]
                 })
             updateObj['labs'] = lab_list
+            updateObj['repoName'] = repoName
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:

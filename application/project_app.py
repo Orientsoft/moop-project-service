@@ -28,6 +28,7 @@ class project_app():
                 timeConsume=self.requestObj.get('timeConsume'),
                 reference=self.requestObj.get('reference'),
                 image=self.requestObj.get('image'),
+                repoName=self.requestObj.get('repoName'),
                 base=self.requestObj.get('base'),
                 spec=self.requestObj.get('spec'),
                 delete=False,
@@ -138,6 +139,7 @@ class project_app():
                 'name': model.tag.name
             },
             'image': model.image.url,
+            'repoName': model.repoName,
             'timeConsume': model.timeConsume,
             'base': (str(model.base._id) if not embed else project_app().unfold_project(
                 model=model.base)) if model.base else None,
