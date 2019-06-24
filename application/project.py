@@ -392,7 +392,7 @@ def project_change(projectId):
             else:
                 return 'github异常', 400
             updateObj['repoName'] = repoName
-        logging.info('updateObj: %s' % str(updateObj))
+        # logging.info('updateObj: %s' % str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
