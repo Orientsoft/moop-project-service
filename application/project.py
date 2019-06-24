@@ -376,19 +376,23 @@ def project_change(projectId):
             repo = git_list[4][: -4] + '/'
             url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
             r = requests.get(url=url)
-            labs = r.json()['labs']
-            lab_list = []
-            for lab in labs:
-                index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
-                key_list = list(lab.keys())
-                value_list = list(lab.values())
-                lab_list.append({
-                    'id': str(projectId) + index,
-                    'filename': key_list[0],
-                    'name': value_list[0]
-                })
-            updateObj['labs'] = lab_list
+            if r.status_code == 200:
+                labs = r.json()['labs']
+                lab_list = []
+                for lab in labs:
+                    index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
+                    key_list = list(lab.keys())
+                    value_list = list(lab.values())
+                    lab_list.append({
+                        'id': str(projectId) + index,
+                        'filename': key_list[0],
+                        'name': value_list[0]
+                    })
+                updateObj['labs'] = lab_list
+            else:
+                return 'github异常', 400
             updateObj['repoName'] = repoName
+        logging.info('updateObj: %s' % str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
