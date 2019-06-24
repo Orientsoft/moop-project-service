@@ -51,7 +51,7 @@ class PROJECT(MongoModel):
     base = ReferenceField('PROJECT', blank=True)
     # base = ReferenceField('PROJECT')
     spec = CharField()
-    repoName = CharField()
+    repoName = CharField(blank=True)
     delete = BooleanField(default=False)
     createdAt = DateTimeField()
     updatedAt = DateTimeField()
