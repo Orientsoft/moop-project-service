@@ -26,9 +26,13 @@ def project_create():
             else:
                 repoName = git_list[4]
                 repo = git_list[4] + '/'
+            # TODO 其他来源
             url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
             r = requests.get(url=url)
-            labs = r.json()['labs']
+            if r.status_code == 200:
+                labs = r.json()['labs']
+            else:
+                return '无法获取项目结构', 400
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             return raise_status(400, 'github地址有误')
