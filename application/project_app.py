@@ -100,7 +100,8 @@ class project_app():
 
     def projectId_check(self, projectId):
         try:
-            PROJECT.objects.get({'_id': projectId, 'delete': False})
+            model = PROJECT.objects.get({'_id': projectId, 'delete': False})
+            return model
         except PROJECT.DoesNotExist:
             raise
 

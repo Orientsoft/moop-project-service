@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from bson import ObjectId
 from auth import raise_status, filter
 from datetime import datetime
+import time
 import logging
 import traceback
 import requests
@@ -13,31 +14,48 @@ projects = Blueprint('projects', __name__)
 def project_create():
     from application.project_app import project_app
     from model import PROJECT
+    from app import app
     requestObj = request.json
     try:
         requestObj['creator'] = ObjectId(requestObj['creator'])
         requestObj['tag'] = ObjectId(requestObj['tag'])
         try:
-            git_list = requestObj['githuburl'].split('/')
-            git_account = git_list[3] + '/'
+            git_list = requestObj['spec'].split('/')
             if '.git' in git_list[4]:
                 repoName = git_list[4][: -4]
-                repo = git_list[4][: -4] + '/'
             else:
-                repoName = git_list[4]
-                repo = git_list[4] + '/'
-            # TODO 其他来源
-            url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
-            r = requests.get(url=url)
-            if r.status_code == 200:
-                labs = r.json()['labs']
+                return 'git地址不合规范'
+            # 以当前时间戳作为项目名大概率不会出现重复, 私有项目带用户名密码，公有项目忽略
+            repo_name = str(int(time.time()))
+            json = {'repo_name': repo_name, 'description': repoName, 'private': True,
+                    'clone_addr': requestObj['spec'], 'auth_username': requestObj['username'],
+                    'auth_password': requestObj['password'], 'uid': 1} if requestObj['private'] else {
+                'repo_name': repo_name, 'description': repoName, 'private': True,
+                'clone_addr': requestObj['spec'], 'uid': 1}
+            r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
+                              json=json)
+            if r.status_code == 201:
+                spec = r.json()['clone_url']
+                url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
+                    app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_TOKEN'])
+                r = requests.get(url=url)
+                if r.status_code == 200:
+                    labs = r.json()['labs']
+                else:
+                    return '无法获取项目结构', 400
+            elif r.status_code == 500:
+                logging.info(r.content.decode())
+                return '迁移失败，请重试', 400
+            elif r.status_code == 400:
+                logging.info(r.content.decode())
+                return '迁移失败', 400
             else:
-                return '无法获取项目结构', 400
+                return '迁移失败', 400
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-            return raise_status(400, 'github地址有误')
+            return raise_status(400, '迁移错误')
         query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                      'material', 'reference', 'image', 'base', 'spec', 'tag']
+                      'material', 'reference', 'image', 'base', 'tag']
         requestObj = filter(query_list=query_list, updateObj=requestObj)
         if project_app(requestObj={'title': requestObj['title']}).project_check():
             return raise_status(400, 'project标题重复')
@@ -50,7 +68,8 @@ def project_create():
             except PROJECT.DoesNotExist:
                 return raise_status(400, '无效的引用信息')
         try:
-            requestObj['repoName'] = repoName
+            requestObj['repoName'] = repo_name
+            requestObj['spec'] = spec
             project_model = project_app(requestObj=requestObj).project_create()
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
@@ -72,50 +91,6 @@ def project_create():
             return raise_status(500, '后台异常')
         project_model = PROJECT.objects.get({'_id': project_model._id, 'delete': False})
         data = project_app().unfold_project(model=project_model, embed=request.args.get('embed'))
-        # if project_model.base is None:
-        #     base = None
-        # else:
-        #     if request.args.get('embed'):
-        #         if project_model.base.base is None:
-        #             base_reference = None
-        #         else:
-        #             base_reference = str(project_model.base.base._id)
-        #         base = {
-        #             'id': str(project_model.base._id),
-        #             'creator': str(project_model.base.creator),
-        #             'description': project_model.base.description,
-        #             'title': project_model.base.title,
-        #             'requirement': project_model.base.requirement,
-        #             'material': project_model.base.material,
-        #             'timeConsume': project_model.base.timeConsume,
-        #             'tag': project_model.base.tag.name,
-        #             'reference': project_model.base.reference,
-        #             'labs': project_model.base.labs,
-        #             'image': project_model.base.image,
-        #             'base': base_reference,
-        #             'spec': project_model.base.spec,
-        #             'createdAt': project_model.base.createdAt,
-        #             'updatedAt': project_model.base.updatedAt
-        #         }
-        #     else:
-        #         base = str(project_model.base._id)
-        # data = {
-        #     'id': str(project_model._id),
-        #     'creator': str(project_model.creator),
-        #     'title': project_model.title,
-        #     'description': project_model.description,
-        #     'requirement': project_model.requirement,
-        #     'material': project_model.material,
-        #     'timeConsume': project_model.timeConsume,
-        #     'tag': project_model.tag.name,
-        #     'labs': lab_list,
-        #     'reference': project_model.reference,
-        #     'image': project_model.image,
-        #     'base': base,
-        #     'spec': project_model.spec,
-        #     'createdAt': project_model.createdAt,
-        #     'updatedAt': project_model.updatedAt
-        # }
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
@@ -140,27 +115,6 @@ def project_list():
             for project_model in model_list:
                 project_dict[str(project_model._id)] = project_app().unfold_project(model=project_model,
                                                                                     embed=request.args.get('embed'))
-                # if project_model.base is None:
-                #     base = None
-                # else:
-                #     base = str(project_model.base._id)
-                # project_dict[str(project_model._id)] = {
-                #     'id': str(project_model._id),
-                #     'creator': str(project_model.creator),
-                #     'description': project_model.description,
-                #     'title': project_model.title,
-                #     'requirement': project_model.requirement,
-                #     'labs': project_model.labs,
-                #     'tag': project_model.tag.name,
-                #     'material': project_model.material,
-                #     'reference': project_model.reference,
-                #     'timeConsume': project_model.timeConsume,
-                #     'image': project_model.image,
-                #     'base': base,
-                #     'spec': project_model.spec,
-                #     'createdAt': project_model.createdAt,
-                #     'updatedAt': project_model.updatedAt
-                # }
             return jsonify(project_dict)
         query = [ObjectId(x) for x in
                  request.args['tag'].replace('[', '').replace(']', '').replace('"', '').replace("'", '').replace(' ',
@@ -190,7 +144,7 @@ def project_list():
         project_ln_list = []
         for project_model in projects_list:
             project_ln_list.append(project_app().unfold_project(model=project_model, embed=request.args.get('embed')))
-        # TODO 在这里加purchase判断
+        # purchase判断
         if request.args.get('tenant'):
             for project in project_ln_list:
                 purchases = list(PURCHASE.objects.raw(
@@ -212,7 +166,6 @@ def project_list():
             }
         return jsonify(returnObj)
     except Exception as e:
-        logging.error('error id: %s' % i)
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return raise_status(500, '后台异常')
 
@@ -234,113 +187,12 @@ def get_project(projectId):
     requestObj = {'_id': projectId}
     project = project_app(requestObj=requestObj).project_find_one()
     data = project_app().unfold_project(model=project, embed=request.args.get('embed'))
-    # if project.base == None:
-    #     base = None
-    # else:
-    #     if request.args.get('embed'):
-    #         if project.base.base is None:
-    #             base_reference = None
-    #         else:
-    #             base_reference = str(project.base.base._id)
-    #         base = {
-    #             'id': str(project.base._id),
-    #             'creator': str(project.base.creator),
-    #             'description': project.base.description,
-    #             'requirement': project.base.requirement,
-    #             'title': project.base.title,
-    #             'tag': project.base.tag.name,
-    #             'timeConsume': project.base.timeConsume,
-    #             'labs': project.base.labs,
-    #             'material': project.base.material,
-    #             'reference': project.base.reference,
-    #             'image': project.base.image,
-    #             'base': base_reference,
-    #             'spec': project.base.spec,
-    #             'createdAt': project.base.createdAt,
-    #             'updatedAt': project.base.updatedAt
-    #         }
-    #     else:
-    #         base = str(project.base._id)
-    # data = {
-    #     'id': str(project._id),
-    #     'creator': str(project.creator),
-    #     'description': project.description,
-    #     'requirement': project.requirement,
-    #     'material': project.material,
-    #     'title': project.title,
-    #     'tag': project.tag.name,
-    #     'labs': project.labs,
-    #     'reference': project.reference,
-    #     'timeConsume': project.timeConsume,
-    #     'image': project.image,
-    #     'base': base,
-    #     'spec': project.spec,
-    #     'createdAt': project.createdAt,
-    #     'updatedAt': project.updatedAt
-    # }
     return jsonify(data)
 
 
 @projects.route('/projects/<projectId>', methods=['PUT'])
 def project_replace(projectId):
-    # from application.project_app import project_app
-    # from model import PROJECT
-    # from bson import ObjectId
-
     return '请改用PATCH接口', 400
-    # try:
-    #     projectId = ObjectId(projectId)
-    #     project_app().projectId_check(projectId=projectId)
-    # except PROJECT.DoesNotExist:
-    #     return raise_status(400, '无效的项目')
-    # except Exception as e:
-    #     logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-    #     return raise_status(400, '错误的ObjectId')
-    # requestObj = {'_id': projectId}
-    # updateObj = request.json
-    # query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-    #               'material', 'reference', 'image', 'base', 'spec', 'tag']
-    # updateObj = filter(query_list=query_list, updateObj=updateObj)
-    # if updateObj.get('id'):
-    #     del updateObj['id']
-    # try:
-    #     if updateObj.get('base') and updateObj.get('base') is not None:
-    #         updateObj['base'] = ObjectId(updateObj['base'])
-    #         project_app().project_reference_check(reference=updateObj['base'])
-    # except PROJECT.DoesNotExist:
-    #     return raise_status(400, '引用错误')
-    # try:
-    #     project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
-    #     project = project_app(requestObj=requestObj).project_find_one()
-    # except Exception as e:
-    #     logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
-    #     return '后台异常', 500
-    # returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
-    # # if project._id == project.base:
-    # #     baseId = None
-    # # else:
-    # #     if project.base is None:
-    # #         baseId = project.base
-    # #     else:
-    # #         baseId = str(project.base._id)
-    # # returnObj = {
-    # #     'id': str(project._id),
-    # #     'creator': str(project.creator),
-    # #     'title': project.title,
-    # #     'description': project.description,
-    # #     'requirement': project.requirement,
-    # #     'material': project.material,
-    # #     'labs': project.labs,
-    # #     'tag': project.tag.name,
-    # #     'timeConsume': project.timeConsume,
-    # #     'reference': project.reference,
-    # #     'image': project.image,
-    # #     'base': baseId,
-    # #     'spec': project.spec,
-    # #     'createdAt': project.createdAt,
-    # #     'updatedAt': project.updatedAt
-    # # }
-    # return jsonify(returnObj)
 
 
 @projects.route('/projects/<projectId>', methods=['PATCH'])
@@ -348,11 +200,13 @@ def project_change(projectId):
     from application.project_app import project_app
     from model import PROJECT
     from bson import ObjectId
+    from app import app
 
     # 校验projectid是否有异常
     try:
         projectId = ObjectId(projectId)
-        project_app().projectId_check(projectId=projectId)
+        model = project_app().projectId_check(projectId=projectId)
+        hisrepo = model.repoName
     except PROJECT.DoesNotExist:
         return '实验已删除', 400
     except Exception as e:
@@ -361,9 +215,55 @@ def project_change(projectId):
     requestObj = {'_id': projectId}
     updateObj = request.json
     # logging.info('updateObj: %s' % str(updateObj))
+    git_list = updateObj['spec'].split('/')
+    if '.git' in git_list[4]:
+        repoName = git_list[4][: -4]
+    else:
+        return 'git地址不合规范'
+    # 以当前时间戳作为项目名大概率不会出现重复, 私有项目带用户名密码，公有项目忽略
+    repo_name = str(int(time.time()))
+    json = {'repo_name': repo_name, 'description': repoName, 'private': True,
+            'clone_addr': updateObj['spec'], 'auth_username': updateObj['username'],
+            'auth_password': updateObj['password'], 'uid': 1} if updateObj['private'] else {
+        'repo_name': repo_name, 'description': repoName, 'private': True,
+        'clone_addr': updateObj['spec'], 'uid': 1}
+    r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
+                      json=json)
+    if r.status_code == 201:
+        spec = r.json()['clone_url']
+        url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
+            app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_TOKEN'])
+        r = requests.get(url=url)
+        if r.status_code == 200:
+            labs = r.json()['labs']
+        else:
+            return '无法获取项目结构', 400
+    elif r.status_code == 500:
+        logging.info(r.content.decode())
+        return '迁移失败，请重试', 400
+    elif r.status_code == 400:
+        logging.info(r.content.decode())
+        return '迁移失败', 400
+    else:
+        logging.info(r.content.decode())
+        return '迁移失败', 400
+    # 组装课题列表
+    lab_list = []
+    for lab in labs:
+        index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
+        key_list = list(lab.keys())
+        value_list = list(lab.values())
+        lab_list.append({
+            'id': str(projectId) + index,
+            'filename': key_list[0],
+            'name': value_list[0]
+        })
     query_list = ['title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'spec', 'tag']
+                  'material', 'reference', 'image', 'base', 'tag']
     updateObj = filter(query_list=query_list, updateObj=updateObj, ObjectId_list=['tag', 'image'])
+    updateObj['spec'] = spec
+    updateObj['labs'] = lab_list
+    updateObj['repoName'] = repo_name
     if updateObj.get('id'):
         del updateObj['id']
     try:
@@ -373,58 +273,17 @@ def project_change(projectId):
     except PROJECT.DoesNotExist:
         return '实验已被删除', 400
     try:
-        # 更新index.json
-        if updateObj.get('spec'):
-            git_list = updateObj['spec'].split('/')
-            git_account = git_list[3] + '/'
-            repoName = git_list[4][:-4]
-            repo = git_list[4][: -4] + '/'
-            url = 'https://raw.githubusercontent.com/' + git_account + repo + 'master/index.json'
-            r = requests.get(url=url)
-            if r.status_code == 200:
-                labs = r.json()['labs']
-                lab_list = []
-                for lab in labs:
-                    index = str(labs.index(lab)) if labs.index(lab) >= 10 else '0' + str(labs.index(lab))
-                    key_list = list(lab.keys())
-                    value_list = list(lab.values())
-                    lab_list.append({
-                        'id': str(projectId) + index,
-                        'filename': key_list[0],
-                        'name': value_list[0]
-                    })
-                updateObj['labs'] = lab_list
-            else:
-                return 'github异常', 400
-            updateObj['repoName'] = repoName
-        # logging.info('updateObj: %s' % str(updateObj))
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
+        r = requests.delete('%s/api/v1/repos/%s/%s?token=%s' % (
+        app.config['GOGS_URL'], app.config['GOGS_USERNAME'], hisrepo, app.config['GOGS_TOKEN']))
+        # 删除有异常记录即可，不作回滚
+        if r.status_code != 204:
+            logging.info(r.content.decode())
         project = project_app(requestObj=requestObj).project_find_one()
     except Exception as e:
         logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
         return '后台异常', 500
     returnObj = project_app().unfold_project(model=project, embed=request.args.get('embed'))
-    # if project._id == project.base:
-    #     baseId = None
-    # else:
-    #     baseId = str(project.base._id)
-    # returnObj = {
-    #     'id': str(project._id),
-    #     'creator': str(project.creator),
-    #     'title': project.title,
-    #     'description': project.description,
-    #     'requirement': project.requirement,
-    #     'material': project.material,
-    #     'reference': project.reference,
-    #     'tag': project.tag.name,
-    #     'labs': project.labs,
-    #     'timeConsume': project.timeConsume,
-    #     'image': project.image,
-    #     'base': baseId,
-    #     'spec': project.spec,
-    #     'createdAt': project.createdAt,
-    #     'updatedAt': project.updatedAt
-    # }
     return jsonify(returnObj)
 
 
