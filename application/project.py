@@ -33,8 +33,9 @@ def project_create():
                 'repo_name': repo_name, 'description': repoName, 'private': False,
                 'clone_addr': requestObj['spec'], 'uid': 1}
             logging.info('json: %s' % str(json))
-            r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
-                              json=json)
+            url = '%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN'])
+            logging.info('url: %s' % url)
+            r = requests.post(url, json=json)
             if r.status_code == 201:
                 spec = r.json()['clone_url']
                 url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
