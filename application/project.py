@@ -50,6 +50,7 @@ def project_create():
                 logging.info(r.content.decode())
                 return '迁移失败', 400
             else:
+                logging.info('status: %d; content: %s' % (r.status_code, r.content.decode()))
                 return '迁移失败', 400
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
