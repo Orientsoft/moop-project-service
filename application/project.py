@@ -32,6 +32,7 @@ def project_create():
                     'auth_password': requestObj['password'], 'uid': 1} if requestObj['private'] else {
                 'repo_name': repo_name, 'description': repoName, 'private': True,
                 'clone_addr': requestObj['spec'], 'uid': 1}
+            logging.info('json: %s' % str(json))
             r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
                               json=json)
             if r.status_code == 201:
