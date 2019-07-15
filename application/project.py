@@ -20,24 +20,36 @@ def project_create():
         requestObj['creator'] = ObjectId(requestObj['creator'])
         requestObj['tag'] = ObjectId(requestObj['tag'])
         try:
+            history = requestObj['spec']
             git_list = requestObj['spec'].split('/')
             if '.git' in git_list[4]:
                 repoName = git_list[4][: -4]
             else:
                 return 'git地址不合规范'
-            # 以当前时间戳作为项目名大概率不会出现重复, 私有项目带用户名密码，公有项目忽略
-            repo_name = str(int(time.time()))
+            # 以原始项目名加当前时间戳作为项目名大概率不会出现重复，且方便管理, 私有项目带用户名密码，公有项目忽略
+            repo_name = '%s_%s' % (repoName, str(int(time.time())))
             json = {'repo_name': repo_name, 'description': repoName, 'private': True,
                     'clone_addr': requestObj['spec'], 'auth_username': requestObj['username'],
                     'auth_password': requestObj['password'], 'uid': int(app.config['GOGS_UID'])} if requestObj[
                 'private'] else {
-                'repo_name': repo_name, 'description': repoName, 'private': False,
+                'repo_name': repo_name, 'description': repoName, 'private': True,
                 'clone_addr': requestObj['spec'], 'uid': int(app.config['GOGS_UID'])}
             logging.info('json: %s' % str(json))
             url = '%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN'])
             logging.info('url: %s' % url)
             r = requests.post(url, json=json)
             if r.status_code == 201:
+                param = {'permission': 'read'}
+                url = '%s/api/v1/repos/%s/%s/collaborators/%s?token=%s' % (
+                app.config['GOGS_URL'], app.comfig['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
+                app.config['GOGS_TOKEN'])
+                r = requests.put(url=url, json=param)
+                if r.status_code == 204:
+                    pass
+                else:
+                    logging.info(
+                        'collaborators add error, status: %d, content: %s' % (r.status_code, r.content.decode()))
+                    return 'git服务异常', 400
                 spec = r.json()['clone_url']
                 url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
                     app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_TOKEN'])
@@ -74,6 +86,8 @@ def project_create():
         try:
             requestObj['repoName'] = repo_name
             requestObj['spec'] = spec
+            # 记录克隆地址，方便运维追溯
+            requestObj['hisUrl'] = history
             project_model = project_app(requestObj=requestObj).project_create()
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
@@ -219,21 +233,34 @@ def project_change(projectId):
     requestObj = {'_id': projectId}
     updateObj = request.json
     # logging.info('updateObj: %s' % str(updateObj))
+    history = updateObj['spec']
     git_list = updateObj['spec'].split('/')
     if '.git' in git_list[4]:
         repoName = git_list[4][: -4]
     else:
         return 'git地址不合规范'
     # 以当前时间戳作为项目名大概率不会出现重复, 私有项目带用户名密码，公有项目忽略
-    repo_name = str(int(time.time()))
+    repo_name = '%s_%s' % (repoName, str(int(time.time())))
     json = {'repo_name': repo_name, 'description': repoName, 'private': True,
             'clone_addr': updateObj['spec'], 'auth_username': updateObj['username'],
             'auth_password': updateObj['password'], 'uid': int(app.config['GOGS_UID'])} if updateObj['private'] else {
-        'repo_name': repo_name, 'description': repoName, 'private': False,
+        'repo_name': repo_name, 'description': repoName, 'private': True,
         'clone_addr': updateObj['spec'], 'uid': int(app.config['GOGS_UID'])}
     r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
                       json=json)
     if r.status_code == 201:
+        # 迁移成功后添加只读用户reader
+        param = {'permission': 'read'}
+        url = '%s/api/v1/repos/%s/%s/collaborators/%s?token=%s' % (
+            app.config['GOGS_URL'], app.comfig['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
+            app.config['GOGS_TOKEN'])
+        r = requests.put(url=url, json=param)
+        if r.status_code == 204:
+            pass
+        else:
+            logging.info(
+                'collaborators add error, status: %d, content: %s' % (r.status_code, r.content.decode()))
+            return 'git服务异常', 400
         spec = r.json()['clone_url']
         url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
             app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_TOKEN'])
@@ -268,6 +295,7 @@ def project_change(projectId):
     updateObj['spec'] = spec
     updateObj['labs'] = lab_list
     updateObj['repoName'] = repo_name
+    updateObj['hisUrl'] = history
     if updateObj.get('id'):
         del updateObj['id']
     try:

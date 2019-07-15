@@ -47,6 +47,7 @@ class PROJECT(MongoModel):
     tag = ReferenceField(TYPE)
     image = ReferenceField(IMAGE)
     labs = ListField()
+    hisUrl = CharField(blank=True)
     timeConsume = CharField()
     base = ReferenceField('PROJECT', blank=True)
     # base = ReferenceField('PROJECT')
