@@ -43,8 +43,8 @@ def project_create():
                 url = '%s/api/v1/repos/%s/%s/collaborators/%s?token=%s' % (
                 app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
                 app.config['GOGS_TOKEN'])
-                r = requests.put(url=url, json=param)
-                if r.status_code == 204:
+                add_reader = requests.put(url=url, json=param)
+                if add_reader.status_code == 204:
                     pass
                 else:
                     logging.info(
@@ -254,8 +254,8 @@ def project_change(projectId):
         url = '%s/api/v1/repos/%s/%s/collaborators/%s?token=%s' % (
             app.config['GOGS_URL'], app.comfig['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
             app.config['GOGS_TOKEN'])
-        r = requests.put(url=url, json=param)
-        if r.status_code == 204:
+        add_reader = requests.put(url=url, json=param)
+        if add_reader.status_code == 204:
             pass
         else:
             logging.info(
