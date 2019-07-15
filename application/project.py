@@ -29,7 +29,8 @@ def project_create():
             repo_name = str(int(time.time()))
             json = {'repo_name': repo_name, 'description': repoName, 'private': True,
                     'clone_addr': requestObj['spec'], 'auth_username': requestObj['username'],
-                    'auth_password': requestObj['password'], 'uid': app.config['GOGS_UID']} if requestObj['private'] else {
+                    'auth_password': requestObj['password'], 'uid': app.config['GOGS_UID']} if requestObj[
+                'private'] else {
                 'repo_name': repo_name, 'description': repoName, 'private': False,
                 'clone_addr': requestObj['spec'], 'uid': app.config['GOGS_UID']}
             logging.info('json: %s' % str(json))
@@ -278,7 +279,7 @@ def project_change(projectId):
     try:
         project_app(requestObj=requestObj, updateObj=updateObj).project_update_set()
         r = requests.delete('%s/api/v1/repos/%s/%s?token=%s' % (
-        app.config['GOGS_URL'], app.config['GOGS_USERNAME'], hisrepo, app.config['GOGS_TOKEN']))
+            app.config['GOGS_URL'], app.config['GOGS_USERNAME'], hisrepo, app.config['GOGS_TOKEN']))
         # 删除有异常记录即可，不作回滚
         if r.status_code != 204:
             logging.info(r.content.decode())
