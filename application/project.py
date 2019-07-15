@@ -29,9 +29,9 @@ def project_create():
             repo_name = str(int(time.time()))
             json = {'repo_name': repo_name, 'description': repoName, 'private': True,
                     'clone_addr': requestObj['spec'], 'auth_username': requestObj['username'],
-                    'auth_password': requestObj['password'], 'uid': 1} if requestObj['private'] else {
+                    'auth_password': requestObj['password'], 'uid': app.config['GOGS_UID']} if requestObj['private'] else {
                 'repo_name': repo_name, 'description': repoName, 'private': False,
-                'clone_addr': requestObj['spec'], 'uid': 1}
+                'clone_addr': requestObj['spec'], 'uid': app.config['GOGS_UID']}
             logging.info('json: %s' % str(json))
             url = '%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN'])
             logging.info('url: %s' % url)
@@ -227,9 +227,9 @@ def project_change(projectId):
     repo_name = str(int(time.time()))
     json = {'repo_name': repo_name, 'description': repoName, 'private': True,
             'clone_addr': updateObj['spec'], 'auth_username': updateObj['username'],
-            'auth_password': updateObj['password'], 'uid': 1} if updateObj['private'] else {
+            'auth_password': updateObj['password'], 'uid': app.config['GOGS_UID']} if updateObj['private'] else {
         'repo_name': repo_name, 'description': repoName, 'private': False,
-        'clone_addr': updateObj['spec'], 'uid': 1}
+        'clone_addr': updateObj['spec'], 'uid': app.config['GOGS_UID']}
     r = requests.post('%s/api/v1/repos/migrate?token=%s' % (app.config['GOGS_URL'], app.config['GOGS_TOKEN']),
                       json=json)
     if r.status_code == 201:
