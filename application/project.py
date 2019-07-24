@@ -252,7 +252,7 @@ def project_change(projectId):
         # 迁移成功后添加只读用户reader
         param = {'permission': 'read'}
         url = '%s/api/v1/repos/%s/%s/collaborators/%s?token=%s' % (
-            app.config['GOGS_URL'], app.comfig['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
+            app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_READER'],
             app.config['GOGS_TOKEN'])
         add_reader = requests.put(url=url, json=param)
         if add_reader.status_code == 204:
