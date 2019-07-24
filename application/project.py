@@ -262,6 +262,7 @@ def project_change(projectId):
                 'collaborators add error, status: %d, content: %s' % (r.status_code, r.content.decode()))
             return 'git服务异常', 400
         spec = r.json()['clone_url']
+        # TODO 重新读取index.json
         url = '%s/api/v1/repos/%s/%s/raw/master/index.json?token=%s' % (
             app.config['GOGS_URL'], app.config['GOGS_USERNAME'], repo_name, app.config['GOGS_TOKEN'])
         r = requests.get(url=url)
