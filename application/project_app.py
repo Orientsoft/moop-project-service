@@ -144,7 +144,8 @@ class project_app():
             'timeConsume': model.timeConsume,
             'base': (str(model.base._id) if not embed else project_app().unfold_project(
                 model=model.base)) if model.base else None,
-            'spec': model.hisUrl,
+            'spec': model.spec,
+            'hisURL': model.hisUrl,
             'createdAt': model.createdAt,
             'updatedAt': model.updatedAt,
             'labs': model.labs
