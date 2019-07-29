@@ -277,6 +277,7 @@ def project_change(projectId):
         logging.info(r.content.decode())
         return '迁移失败', 400
     else:
+        # 十有八九是没有账户的报错
         logging.info(r.content.decode())
         return '迁移失败', 400
     # 组装课题列表
