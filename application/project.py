@@ -321,6 +321,7 @@ def project_change(projectId):
     return jsonify(returnObj)
 
 
+# 删除实验项目
 @projects.route('/projects/<projectId>', methods=['DELETE'])
 def project_delete(projectId):
     from application.project_app import project_app
