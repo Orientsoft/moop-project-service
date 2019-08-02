@@ -70,8 +70,7 @@ def project_create():
         except Exception as e:
             logging.error('Request Error: {}\nStack: {}\n'.format(e, traceback.format_exc()))
             return raise_status(400, '迁移错误')
-        query_list = ['creator', 'title', 'description', 'requirement', 'timeConsume',
-                      'material', 'reference', 'image', 'base', 'tag']
+        query_list = ['creator', 'title', 'description', 'timeConsume', 'image', 'base', 'tag']
         requestObj = filter(query_list=query_list, updateObj=requestObj)
         if project_app(requestObj={'title': requestObj['title']}).project_check():
             return raise_status(400, 'project标题重复')
@@ -291,8 +290,7 @@ def project_change(projectId):
             'filename': key_list[0],
             'name': value_list[0]
         })
-    query_list = ['title', 'description', 'requirement', 'timeConsume',
-                  'material', 'reference', 'image', 'base', 'tag']
+    query_list = ['title', 'description', 'timeConsume', 'image', 'base', 'tag']
     updateObj = filter(query_list=query_list, updateObj=updateObj, ObjectId_list=['tag', 'image'])
     updateObj['spec'] = spec
     updateObj['labs'] = lab_list
@@ -322,6 +320,7 @@ def project_change(projectId):
 
 
 # 删除实验项目
+
 @projects.route('/projects/<projectId>', methods=['DELETE'])
 def project_delete(projectId):
     from application.project_app import project_app
