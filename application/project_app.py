@@ -30,6 +30,7 @@ class project_app():
                 image=self.requestObj.get('image'),
                 repoName=self.requestObj.get('repoName'),
                 base=self.requestObj.get('base'),
+                hisUrl=self.requestObj.get('hisUrl'),
                 spec=self.requestObj.get('spec'),
                 delete=False,
                 createdAt=datetime.now(),
